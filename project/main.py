@@ -50,31 +50,31 @@ currentOrderSize = None
 
 #region Classes
 class Item:
-    # Key notes:
-    # None lol
-    def __init__(self, image : str, outlineColor : tuple[int, int, int], itemName: str):
+    def __init__(self, image : str, outlineColor : tuple[int, int, int], itemName: str, itemType : str = "", positionOnScreen : tuple[int, int] = (0, 0)):
         self.image = image # Image path
         self.outlineColor = outlineColor # Format in BGR
         self.itemName = itemName
+        self.itemType = itemType
+        self.positionOnScreen = positionOnScreen
 
 # Images for menu items including buttons
-burgerMenuButton = Item(r"project\img\menuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button")
-fryMenuButton = Item(r"project\img\menuItems\FryMenuButton.png", (100, 0, 255), "Fry menu button")
-drinkMenuButton = Item(r"project\img\menuItems\DrinkMenuButton.png", (225, 60, 255), "Drink menu button")
-menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), "Finish menu button")
+burgerMenuButton = Item(r"project\img\menuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", "MenuItem")
+fryMenuButton = Item(r"project\img\menuItems\FryMenuButton.png", (100, 0, 255), "Fry menu button", "MenuItem")
+drinkMenuButton = Item(r"project\img\menuItems\DrinkMenuButton.png", (225, 60, 255), "Drink menu button", "MenuItem")
+menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), "Finish menu button", "MenuItem")
 
-burgerBunTopItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunTop.png", (0, 255, 0), "Bun top")
-burgerCheeseItem = Item(r"project\img\menuItems\ingredients\burger\CheeseMenu.png", (0, 255, 0), "Cheese")
-burgerPattyVeganItem = Item(r"project\img\menuItems\ingredients\burger\PattyVeganMenu.png", (0, 255, 0), "Vegan patty")
-burgerPattyMeatItem = Item(r"project\img\menuItems\ingredients\burger\PattyMeatMenu.png", (0, 255, 0), "Meat patty")
-burgerBunBottomItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunBottom.png", (0, 255, 0), "Bun bottom")
+burgerBunTopItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunTop.png", (0, 255, 0), "Bun menu top", "MenuItem")
+burgerCheeseItem = Item(r"project\img\menuItems\ingredients\burger\CheeseMenu.png", (0, 255, 0), "Cheese menu", "MenuItem")
+burgerPattyVeganItem = Item(r"project\img\menuItems\ingredients\burger\PattyVeganMenu.png", (0, 255, 0), "Vegan menu patty", "MenuItem")
+burgerPattyMeatItem = Item(r"project\img\menuItems\ingredients\burger\PattyMeatMenu.png", (0, 255, 0), "Meat menu patty", "MenuItem")
+burgerBunBottomItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunBottom.png", (0, 255, 0), "Bun menu bottom", "MenuItem")
 
 # Images for dialogue items
-# NOTE: ALL THE DIALOGUE ITEMS NAME MUST END WITH AN "order". EX.: "Cheese order"
-cheeseOrder = Item(r"project\img\dialogueItems\burger\CheeseDialogue.png", (255, 0, 0), "Cheese order")
-pattyOrder = Item(r"project\img\dialogueItems\burger\PattyDialogue.png", (0, 255, 0), "Patty order")
-normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order")
-normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order")
+# NOTE: ALL THE DIALOGUE ITEMS NAME MUST END WITH AN "order". EX.: "Cheese order" AND DO NOT ADD ANY ITEMTYPE TO THE SIZES
+cheeseOrder = Item(r"project\img\dialogueItems\burger\CheeseDialogue.png", (255, 0, 0), "Cheese order", "DialogueItem")
+pattyOrder = Item(r"project\img\dialogueItems\burger\PattyDialogue.png", (0, 255, 0), "Patty order", "DialogueItem")
+normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order", "DialogueItem")
+normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order", "DialogueItem")
 
 smallSizeMenu = Item(r"project\img\sizes\menu\Small.png", (0, 255, 0), "Small size menu")
 mediumSizeMenu = Item(r"project\img\sizes\menu\Medium.png", (0, 255, 0), "Medium size menu")
@@ -112,12 +112,6 @@ dialogueItems = [
     normalFryOrder,
     normalDrinkOrder,
 ]
-
-burgerBunBottomPosition = (0, 0)
-burgerMeatPattyPosition = (0, 0)
-burgerVeganPattyPosition = (0, 0)
-burgerCheesePosition = (0, 0)
-burgerBunTopPosition = (0, 0)
 #endregion
 
 #region Functions
@@ -149,6 +143,10 @@ def GetSizeOfItem(item : Item):
 def GetWordInPhrase(wordToFind : str, phrase : str):
     return wordToFind if wordToFind in phrase.split() else None
 
+def GetItemCenter(point, template):
+    print((point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2))
+    return (point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2)
+
 orderedItem = False
 def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
     global orderedItem
@@ -165,20 +163,38 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
             for point in points:
                 if all(np.linalg.norm(np.array(point) - np.array(p)) >= 10 for p in filtered_points):
                     filtered_points.append(point)
-                    break  # Break after the first match to prevent detecting the same image twice
+                    break 
 
             for point in filtered_points:
                 #print(GetAmountOfItems(regionRgb))
+                cv.circle(regionRgb, (point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2), 5, (255, 255, 255), 2)
                 if (item.itemName not in currentOrderedItems):
-                    if ("order" in item.itemName):
-                        currentOrderedItems.append(item.itemName)
-                
+                    match item.itemType:
+                        case "DialogueItem":
+                            currentOrderedItems.append(item.itemName)
+                        case "MenuItem":
+                            item.positionOnScreen = point
+                    
                 if (not orderedItem):
                     match currentOrderState:
                         case OrderState.BURGER:
                             orderedItem = True
                             print("burgir")
+                            burgerBunTopItem.positionOnScreen = GetItemCenter(point, template)
                             
+                            match item.itemName:
+                                case "Bun menu top":
+                                    burgerBunTopItem.positionOnScreen = GetItemCenter(point, template)
+                                case "Cheese menu":
+                                    burgerCheeseItem.positionOnScreen = GetItemCenter(point, template)
+                                case "Vegan menu patty":
+                                    burgerPattyVeganItem.positionOnScreen = GetItemCenter(point, template)
+                                case "Meat menu patty":
+                                    burgerPattyMeatItem.positionOnScreen = GetItemCenter(point, template)
+                                case "Bun menu bottom":
+                                    burgerBunBottomItem.positionOnScreen = GetItemCenter(point, template)
+                                case "Finish menu button":
+                                    menuFinishButton.positionOnScreen = GetItemCenter(point, template)
                             # Switch to fries state when done
                         case OrderState.FRIES:
                             orderedItem = True

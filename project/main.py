@@ -12,6 +12,7 @@ from PIL import Image
 import pytesseract
 from enum import Enum, auto
 import re
+import threading
 
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Users\2690360\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
@@ -131,6 +132,7 @@ def GetAmountOfItems(itemImage): # Gets the amount of ordered items based on an 
         
 def GetSizeOfItem(item : Item):
     size = None
+    # NOTE USE ITEM TYPES IN FUTURE
     match item.itemName:
         case name if "Small" in name:
             size = OrderSizes.SMALL
@@ -143,9 +145,12 @@ def GetSizeOfItem(item : Item):
 def GetWordInPhrase(wordToFind : str, phrase : str):
     return wordToFind if wordToFind in phrase.split() else None
 
-def GetItemCenter(point, template):
-    print((point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2))
-    return (point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2)
+def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
+    # Calculate center position with global offset
+    centerX = int(point[0] + template.shape[1] // 2 + regionTopLeft[0])
+    centerY = int(point[1] + template.shape[0] // 2 + regionTopLeft[1])
+    print(f"{name} Global Center: ({centerX}, {centerY})")
+    return (centerX, centerY)
 
 orderedItem = False
 def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
@@ -167,6 +172,7 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
 
             for point in filtered_points:
                 #print(GetAmountOfItems(regionRgb))
+                menuTopLeft = (menuRegion[0], menuRegion[1])
                 cv.circle(regionRgb, (point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2), 5, (255, 255, 255), 2)
                 if (item.itemName not in currentOrderedItems):
                     match item.itemType:
@@ -174,28 +180,26 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                             currentOrderedItems.append(item.itemName)
                         case "MenuItem":
                             item.positionOnScreen = point
+                            match item.itemName:
+                                case "Bun menu top":
+                                    burgerBunTopItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                case "Cheese menu":
+                                    burgerCheeseItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                case "Vegan menu patty":
+                                    burgerPattyVeganItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                case "Meat menu patty":
+                                    burgerPattyMeatItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                case "Bun menu bottom":
+                                    burgerBunBottomItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                case "Finish menu button":
+                                    menuFinishButton.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
                     
                 if (not orderedItem):
                     match currentOrderState:
                         case OrderState.BURGER:
-                            orderedItem = True
-                            print("burgir")
-                            burgerBunTopItem.positionOnScreen = GetItemCenter(point, template)
-                            
-                            match item.itemName:
-                                case "Bun menu top":
-                                    burgerBunTopItem.positionOnScreen = GetItemCenter(point, template)
-                                case "Cheese menu":
-                                    burgerCheeseItem.positionOnScreen = GetItemCenter(point, template)
-                                case "Vegan menu patty":
-                                    burgerPattyVeganItem.positionOnScreen = GetItemCenter(point, template)
-                                case "Meat menu patty":
-                                    burgerPattyMeatItem.positionOnScreen = GetItemCenter(point, template)
-                                case "Bun menu bottom":
-                                    burgerBunBottomItem.positionOnScreen = GetItemCenter(point, template)
-                                case "Finish menu button":
-                                    menuFinishButton.positionOnScreen = GetItemCenter(point, template)
-                            # Switch to fries state when done
+                            print("")
+                            #print(burgerBunTopItem.positionOnScreen)
+                            #pyautogui.moveTo(burgerBunTopItem.positionOnScreen[0], burgerBunTopItem.positionOnScreen[1])
                         case OrderState.FRIES:
                             orderedItem = True
                             print("fries")
@@ -204,7 +208,6 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                             orderedItem = True
                             print("drink")
                             GetSizeOfItem(item)
-
                 cv.rectangle(regionRgb, point, (point[0] + w, point[1] + h), item.outlineColor, 3)
                 cv.putText(regionRgb, item.itemName, (point[0], point[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
                     

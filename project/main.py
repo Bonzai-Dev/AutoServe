@@ -182,11 +182,11 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                             # Switch to fries state when done
                         case OrderState.FRIES:
                             orderedItem = True
-                            
                             print("fries")
                             GetSizeOfItem(item)
                         case OrderState.DRINK:
                             orderedItem = True
+                            print("drink")
                             GetSizeOfItem(item)
 
                 cv.rectangle(regionRgb, point, (point[0] + w, point[1] + h), item.outlineColor, 3)

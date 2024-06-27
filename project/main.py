@@ -155,7 +155,7 @@ def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     return (centerX, centerY)
 
 def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
-    global orderedItem
+    global currentOrderState
     try:
         for item in itemsList: 
             template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
@@ -201,18 +201,25 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
         match currentOrderState:
             case OrderState.BURGER:
                 pyautogui.moveTo(burgerBunBottomItem.positionOnScreen[0], burgerBunBottomItem.positionOnScreen[1])
+                
+                #Extra checks for the patties
                 pyautogui.moveTo(burgerPattyMeatItem.positionOnScreen[0], burgerPattyMeatItem.positionOnScreen[1])
                 pyautogui.moveTo(burgerPattyVeganItem.positionOnScreen[0], burgerPattyVeganItem.positionOnScreen[1])
+                
                 pyautogui.moveTo(burgerCheeseItem.positionOnScreen[0], burgerCheeseItem.positionOnScreen[1])
+                pyautogui.moveTo(burgerBunTopItem.positionOnScreen[0], burgerBunTopItem.positionOnScreen[1])
+                
                 pyautogui.moveTo(burgerBunTopItem.positionOnScreen[0], burgerBunTopItem.positionOnScreen[1])
                 
                 currentOrderState = OrderState.FRIES
             case OrderState.FRIES:
                 print("fries")
                 GetSizeOfItem(item)
+                currentOrderState = OrderState.DRINK
             case OrderState.DRINK:
                 print("drink")
                 GetSizeOfItem(item)
+                currentOrderState = OrderState.FINISH
             case OrderState.FINISH:
                 print("finished order")
                 return

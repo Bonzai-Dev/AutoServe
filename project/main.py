@@ -13,10 +13,11 @@ import pytesseract
 from enum import Enum, auto
 import re
 import ctypes
+import traceback
 
 # Make the program DPI aware to handle display scaling properly
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
-pytesseract.pytesseract.tesseract_cmd = r"C:\Users\2690360\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"project\Tesseract-OCR\tesseract.exe"
 
 dialogueRegion = (787, 290, 355, 140) # x, y, width, height
 menuRegion = (1373, 210, 550, 700)
@@ -52,8 +53,9 @@ currentOrderedItems = []
 currentOrderSize = None
 
 #region Classes
+#NOTE IF STARTPOSITION IS SET TO 0,0 IT WILL NOT WORK
 class Item:
-    def __init__(self, image : str, outlineColor : tuple[int, int, int], itemName: str, itemType : str = "", positionOnScreen : tuple[int, int] = (0, 0)):
+    def __init__(self, image : str, outlineColor : tuple[int, int, int], itemName: str, itemType : str = "", positionOnScreen : tuple[int, int] = (500, 500)):
         self.image = image # Image path
         self.outlineColor = outlineColor # Format in BGR
         self.itemName = itemName
@@ -72,20 +74,23 @@ burgerPattyVeganItem = Item(r"project\img\menuItems\ingredients\burger\PattyVega
 burgerPattyMeatItem = Item(r"project\img\menuItems\ingredients\burger\PattyMeatMenu.png", (0, 255, 0), "Meat menu patty", "MenuItem")
 burgerBunBottomItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunBottom.png", (0, 255, 0), "Bun menu bottom", "MenuItem")
 
+normalFriesItem = Item(r"project\img\menuItems\ingredients\fries\FryNormalMenu.png", (0, 255, 0), "Fry normal menu", "MenuItem")
+
 # Images for dialogue items
 # NOTE: ALL THE DIALOGUE ITEMS NAME MUST END WITH AN "order". EX.: "Cheese order" AND DO NOT ADD ANY ITEMTYPE TO THE SIZES
 cheeseOrder = Item(r"project\img\dialogueItems\burger\CheeseDialogue.png", (255, 0, 0), "Cheese order", "DialogueItem")
-pattyOrder = Item(r"project\img\dialogueItems\burger\PattyDialogue.png", (0, 255, 0), "Patty order", "DialogueItem")
+pattyMeatDialogue = Item(r"project\img\dialogueItems\burger\PattyMeatDialogue.png", (0, 255, 0), "Patty meat order", "DialogueItem")
+pattyVeganDialogue = Item(r"project\img\dialogueItems\burger\PattyVeganDialogue.png", (0, 20, 0), "Patty vegan order", "DialogueItem")
 normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order", "DialogueItem")
 normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order", "DialogueItem")
 
-smallSizeMenu = Item(r"project\img\sizes\menu\Small.png", (0, 255, 0), "Small size menu")
-mediumSizeMenu = Item(r"project\img\sizes\menu\Medium.png", (0, 255, 0), "Medium size menu")
-largeSizeMenu = Item(r"project\img\sizes\menu\Large.png", (0, 255, 0), "Lage size menu")
+smallSizeMenu = Item(r"project\img\sizes\menu\Small.png", (0, 255, 0), "Small size menu", "Size")
+mediumSizeMenu = Item(r"project\img\sizes\menu\Medium.png", (0, 255, 0), "Medium size menu", "Size")
+largeSizeMenu = Item(r"project\img\sizes\menu\Large.png", (0, 255, 0), "Lage size menu", "Size")
 
-smallSizeDialogue = Item(r"project\img\sizes\dialogue\Small.png", (0, 255, 0), "Small size dialogue")
-mediumSizeDialogue = Item(r"project\img\sizes\dialogue\Medium.png", (0, 255, 0), "Medium size dialogue")
-largeSizeDialogue = Item(r"project\img\sizes\dialogue\Large.png", (0, 255, 0), "Large size dialogue")
+smallSizeDialogue = Item(r"project\img\sizes\dialogue\Small.png", (0, 255, 0), "Small size dialogue", "Size")
+mediumSizeDialogue = Item(r"project\img\sizes\dialogue\Medium.png", (0, 255, 0), "Medium size dialogue", "Size")
+largeSizeDialogue = Item(r"project\img\sizes\dialogue\Large.png", (0, 255, 0), "Large size dialogue", "Size")
 
 # Lists containing all the items for each region. Ex.: the dialogue is one region, so the patty and cheese order is in that list
 menuItems = [
@@ -97,6 +102,8 @@ menuItems = [
     fryMenuButton,
     drinkMenuButton,
     menuFinishButton,
+    
+    normalFriesItem,
     
     burgerBunTopItem,
     burgerCheeseItem,
@@ -111,7 +118,8 @@ dialogueItems = [
     largeSizeDialogue,
     
     cheeseOrder, 
-    pattyOrder,
+    pattyMeatDialogue,
+    pattyVeganDialogue,
     normalFryOrder,
     normalDrinkOrder,
 ]
@@ -144,9 +152,6 @@ def GetSizeOfItem(item : Item):
             size = OrderSizes.LARGE        
     return size
 
-def GetWordInPhrase(wordToFind : str, phrase : str):
-    return wordToFind if wordToFind in phrase.split() else None
-
 def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     # Calculate center position with global offset
     centerX = int(point[0] + template.shape[1] // 2 + regionTopLeft[0])
@@ -154,78 +159,138 @@ def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     print(f"{name} Global Center: ({centerX}, {centerY})")
     return (centerX, centerY)
 
-def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
-    global currentOrderState
-    try:
-        for item in itemsList: 
-            template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
-            _, binary_image = cv.threshold(template, 128, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
-            w, h = template.shape[::-1]
+def ClickOnItem(item : Item):
+    positionX = item.positionOnScreen[0]
+    positionY = item.positionOnScreen[1]
+    
+    print(f"Coordinates of: {item.itemName} is: ", positionX, positionY)
+    pyautogui.click(positionX, positionY)
+    time.sleep(0.5)
 
-            resolution = cv.matchTemplate(regionGray, template, cv.TM_CCOEFF_NORMED)
+def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
+    global currentOrderState, currentOrderSize
+    try:
+        detectedItems = []
+        for item in itemsList:
+            template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
+            template = cv.adaptiveThreshold(template, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+            regionAdaptiveThresh = cv.adaptiveThreshold(regionGray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+            w, h = template.shape[::-1]
+            resolution = cv.matchTemplate(regionAdaptiveThresh, template, cv.TM_CCOEFF_NORMED)
             locate = np.where(resolution >= threshold)
             points = list(zip(*locate[::-1]))
+            
             filtered_points = []
             for point in points:
                 if all(np.linalg.norm(np.array(point) - np.array(p)) >= 10 for p in filtered_points):
                     filtered_points.append(point)
-                    break 
+                    break  
 
             for point in filtered_points:
-                #print(GetAmountOfItems(regionRgb))
-                menuTopLeft = (menuRegion[0], menuRegion[1])
+                #print(GetAmountOfItems(regionRgb))    
+                cv.rectangle(regionRgb, point, (point[0] + w, point[1] + h), item.outlineColor, 3)
+                cv.putText(regionRgb, item.itemName, (point[0], point[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)            
                 cv.circle(regionRgb, (point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2), 5, (255, 255, 255), 2)
-                if (item.itemName not in currentOrderedItems):
+                
+                # Detects all the items and adds values
+                if (item.itemName not in detectedItems):
                     match item.itemType:
+                        case "Size":
+                            currentOrderSize = GetSizeOfItem(item)
                         case "DialogueItem":
-                            currentOrderedItems.append(item.itemName)
+                            if (item.itemName not in currentOrderedItems):
+                                currentOrderedItems.append(item.itemName)
+                                detectedItems.append(item.itemName)
+                                
                         case "MenuItem":
-                            item.positionOnScreen = point
+                            detectedItems.append(item.itemName)
+                            menuTopLeft = (menuRegion[0], menuRegion[1])
                             match item.itemName:
                                 case "Bun menu top":
                                     burgerBunTopItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(1)
                                 case "Cheese menu":
                                     burgerCheeseItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(2)
                                 case "Vegan menu patty":
                                     burgerPattyVeganItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(3)
                                 case "Meat menu patty":
                                     burgerPattyMeatItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(4)
                                 case "Bun menu bottom":
                                     burgerBunBottomItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(5)
                                 case "Finish menu button":
                                     menuFinishButton.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(6)
+                                case "Burger menu button":
+                                    burgerMenuButton.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(7)
+                                case "Fry menu button":
+                                    fryMenuButton.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(8)
+                                case "Drink menu button":
+                                    drinkMenuButton.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(9)
+                                case "Fry normal menu":
+                                    normalFriesItem.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(10)
+                                case "Small size menu":
+                                    smallSizeMenu.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(11)
+                                case "Medium size menu":
+                                    mediumSizeMenu.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(12)
+                                case "Large size menu":
+                                    largeSizeMenu.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
+                                    print(13)
                     
-                cv.rectangle(regionRgb, point, (point[0] + w, point[1] + h), item.outlineColor, 3)
-                cv.putText(regionRgb, item.itemName, (point[0], point[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
-        
-        match currentOrderState:
-            case OrderState.BURGER:
-                pyautogui.moveTo(burgerBunBottomItem.positionOnScreen[0], burgerBunBottomItem.positionOnScreen[1])
-                
-                #Extra checks for the patties
-                pyautogui.moveTo(burgerPattyMeatItem.positionOnScreen[0], burgerPattyMeatItem.positionOnScreen[1])
-                pyautogui.moveTo(burgerPattyVeganItem.positionOnScreen[0], burgerPattyVeganItem.positionOnScreen[1])
-                
-                pyautogui.moveTo(burgerCheeseItem.positionOnScreen[0], burgerCheeseItem.positionOnScreen[1])
-                pyautogui.moveTo(burgerBunTopItem.positionOnScreen[0], burgerBunTopItem.positionOnScreen[1])
-                
-                pyautogui.moveTo(burgerBunTopItem.positionOnScreen[0], burgerBunTopItem.positionOnScreen[1])
-                
-                currentOrderState = OrderState.FRIES
-            case OrderState.FRIES:
-                print("fries")
-                GetSizeOfItem(item)
-                currentOrderState = OrderState.DRINK
-            case OrderState.DRINK:
-                print("drink")
-                GetSizeOfItem(item)
-                currentOrderState = OrderState.FINISH
-            case OrderState.FINISH:
-                print("finished order")
-                return
-
+                    match currentOrderState:
+                        case OrderState.BURGER:
+                            ClickOnItem(burgerBunBottomItem)
+                            if (pattyMeatDialogue.itemName in currentOrderedItems):
+                                ClickOnItem(burgerPattyMeatItem)
+                            elif (pattyVeganDialogue.itemName in currentOrderedItems):
+                                ClickOnItem(burgerPattyVeganItem)
+                            
+                            ClickOnItem(burgerCheeseItem)
+                            ClickOnItem(burgerBunTopItem)
+                            ClickOnItem(fryMenuButton)
+                            
+                            currentOrderState = OrderState.FRIES
+                        case OrderState.FRIES:
+                            '''ClickOnItem(normalFriesItem)
+                            
+                            match currentOrderSize:
+                                case OrderSizes.SMALL:
+                                    ClickOnItem(smallSizeMenu)
+                                case OrderSizes.MEDIUM:
+                                    ClickOnItem(mediumSizeMenu)
+                                case OrderSizes.LARGE:
+                                    ClickOnItem(largeSizeMenu)'''
+                            
+                            currentOrderState = OrderState.DRINK
+                        case OrderState.DRINK:
+                            '''ClickOnItem(drinkMenuButton)
+                            
+                            match currentOrderSize:
+                                case OrderSizes.SMALL:
+                                    ClickOnItem(smallSizeMenu)
+                                case OrderSizes.MEDIUM:
+                                    ClickOnItem(mediumSizeMenu)
+                                case OrderSizes.LARGE:
+                                    ClickOnItem(largeSizeMenu)
+                            
+                            GetSizeOfItem(item)
+                            currentOrderState = OrderState.FINISH'''
+                        case OrderState.FINISH:
+                            # reset everything
+                            return
+                                    
     except Exception as e:
-        print(f"An error occurred in DetectElementInRegion: {e}")
+        tb = traceback.format_exc()
+        print(f"An error occurred in DetectElementInRegion: {e}\nTraceback: {tb}")
         
 def TakeScreenshot():
     global dialogue, dialogueRgb, dialogueBgr, dialogueGray, menu, menuRgb, menuBgr, menuGray
@@ -252,8 +317,8 @@ TakeScreenshot()
 try:
     while True:
         TakeScreenshot()
-        DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems, 0.67)
-        DetectElementInRegion(menuRgb, menuGray, menuItems)
+        DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems, 0.6)
+        DetectElementInRegion(menuRgb, menuGray, menuItems, 0.6)
 
         ShowWindow(dialogueRgb, dialogueWindowName, 400)
         ShowWindow(menuRgb, menuWindowName, 400)

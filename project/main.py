@@ -12,15 +12,16 @@ from PIL import Image
 import pytesseract
 from enum import Enum, auto
 import re
-import threading
+import ctypes
 
-
+# Make the program DPI aware to handle display scaling properly
+ctypes.windll.shcore.SetProcessDpiAwareness(1)
 pytesseract.pytesseract.tesseract_cmd = r"C:\Users\2690360\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 
 dialogueRegion = (787, 290, 355, 140) # x, y, width, height
 menuRegion = (1373, 210, 550, 700)
 
-screenShotRate = 1 # in seconds
+screenShotRate = 0.5 # in seconds
 dialogueWindowName = "Dialogue AI view"
 menuWindowName = "Menu AI view"
 #windowWidth = 300; # in pixels and will automatically adjust its height
@@ -44,6 +45,7 @@ class OrderState(Enum):
     BURGER = auto()
     DRINK = auto()
     FRIES = auto()
+    FINISH = auto()
 
 currentOrderState = OrderState.BURGER
 currentOrderedItems = []
@@ -152,7 +154,6 @@ def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     print(f"{name} Global Center: ({centerX}, {centerY})")
     return (centerX, centerY)
 
-orderedItem = False
 def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
     global orderedItem
     try:
@@ -194,23 +195,28 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                                 case "Finish menu button":
                                     menuFinishButton.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuTopLeft)
                     
-                if (not orderedItem):
-                    match currentOrderState:
-                        case OrderState.BURGER:
-                            print("")
-                            #print(burgerBunTopItem.positionOnScreen)
-                            #pyautogui.moveTo(burgerBunTopItem.positionOnScreen[0], burgerBunTopItem.positionOnScreen[1])
-                        case OrderState.FRIES:
-                            orderedItem = True
-                            print("fries")
-                            GetSizeOfItem(item)
-                        case OrderState.DRINK:
-                            orderedItem = True
-                            print("drink")
-                            GetSizeOfItem(item)
                 cv.rectangle(regionRgb, point, (point[0] + w, point[1] + h), item.outlineColor, 3)
                 cv.putText(regionRgb, item.itemName, (point[0], point[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
-                    
+        
+        match currentOrderState:
+            case OrderState.BURGER:
+                pyautogui.moveTo(burgerBunBottomItem.positionOnScreen[0], burgerBunBottomItem.positionOnScreen[1])
+                pyautogui.moveTo(burgerPattyMeatItem.positionOnScreen[0], burgerPattyMeatItem.positionOnScreen[1])
+                pyautogui.moveTo(burgerPattyVeganItem.positionOnScreen[0], burgerPattyVeganItem.positionOnScreen[1])
+                pyautogui.moveTo(burgerCheeseItem.positionOnScreen[0], burgerCheeseItem.positionOnScreen[1])
+                pyautogui.moveTo(burgerBunTopItem.positionOnScreen[0], burgerBunTopItem.positionOnScreen[1])
+                
+                currentOrderState = OrderState.FRIES
+            case OrderState.FRIES:
+                print("fries")
+                GetSizeOfItem(item)
+            case OrderState.DRINK:
+                print("drink")
+                GetSizeOfItem(item)
+            case OrderState.FINISH:
+                print("finished order")
+                return
+
     except Exception as e:
         print(f"An error occurred in DetectElementInRegion: {e}")
         

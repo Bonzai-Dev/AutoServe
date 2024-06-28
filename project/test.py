@@ -7,15 +7,11 @@ from PIL import Image
 import pytesseract
 from enum import Enum, auto
 import re
-
-
-pyautogui.moveTo(1574, 845)
-
 import ctypes
+import autoit
+import time
+import win32api, win32con
 
-# Attempt a different DPI awareness setting if the previous one didn't work
-ctypes.windll.user32.SetProcessDPIAware()
-
-# Debugging: Print the output of GetGlobalItemCenterPosition
-test_point = (100, 100)  # Example point
-pyautogui.moveTo(1574, 845)  # Replace 100, 100 with known good coordinates for testing
+time.sleep(2)
+autoit.mouse_click("left", 1574, 847, 1, 2)
+autoit.mouse_click("left", 1624, 283, 1, 2)

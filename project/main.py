@@ -54,11 +54,10 @@ class OrderState(Enum):
     FRIES = auto()
     FINISH = auto()
 
-currentOrderState = OrderState.BURGER
+currentOrderState = OrderState.FRIES
 detectedOrderedItems = []
 detectedMenuItems = []
 detectedItems = []
-currentOrderSize = None
 
 #region Classes
 #NOTE IF STARTPOSITION IS SET TO 0,0 IT WILL NOT WORK
@@ -73,7 +72,7 @@ class Item:
 
 # Images for menu items including buttons
 burgerMenuButton = Item(r"project\img\menuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", ItemTypes.MENU_ITEM)
-fryMenuButton = Item(r"project\img\menuItems\FryMenuButton.png", (100, 0, 255), "Fry menu button", ItemTypes.MENU_ITEM)
+friesMenuButton = Item(r"project\img\menuItems\friesMenuButton.png", (100, 0, 255), "Fry menu button", ItemTypes.MENU_ITEM)
 drinkMenuButton = Item(r"project\img\menuItems\DrinkMenuButton.png", (225, 60, 255), "Drink menu button", ItemTypes.MENU_ITEM)
 menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), "Finish menu button", ItemTypes.MENU_ITEM)
 
@@ -108,7 +107,7 @@ menuItems = [
     largeSizeMenu,
     
     burgerMenuButton, 
-    fryMenuButton,
+    friesMenuButton,
     drinkMenuButton,
     menuFinishButton,
     
@@ -135,9 +134,24 @@ dialogueItems = [
 #endregion
 
 #region Functions
-wowowo = 0
+def ClickOnItem(item, amount : int = 1):
+    positionX = item.positionOnScreen[0]
+    positionY = item.positionOnScreen[1]
+    autoit.mouse_click("left", positionX, positionY, amount, 2)
+
+def ClickOnItemSize():
+    # Removing all of the items from list once detected so that we can readd them again to prevent duplicates
+    if (smallSizeDialogue in detectedOrderedItems):
+        ClickOnItem(smallSizeMenu)
+        detectedOrderedItems.remove(smallSizeDialogue)
+    elif (mediumSizeDialogue in detectedOrderedItems):
+        ClickOnItem(mediumSizeMenu)
+        detectedOrderedItems.remove(mediumSizeDialogue)
+    elif (largeSizeDialogue in detectedOrderedItems):
+        ClickOnItem(largeSizeMenu)
+        detectedOrderedItems.remove(largeSizeDialogue)
+
 def GetTextFromImage(image):
-    global wowowo
     # Convert the image to grayscale
     gray_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
@@ -162,15 +176,13 @@ def GetTextFromImage(image):
     new_height = int(thresholded_image.shape[0] * scale_factor)
     scaled_image = cv.resize(thresholded_image, (new_width, new_height), interpolation=cv.INTER_LINEAR)
 
-    cv.imwrite(f'detected_text_{wowowo}.png', scaled_image)
-    wowowo += 1
-
     # Extracting text from the scaled image using custom configurations
     # Using PSM 6 (Assume a single uniform block of text) and whitelisting characters
     custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     text = pytesseract.image_to_string(scaled_image, config=custom_config)
     print("extracted text: " + text)
     return text
+
 def GetAmountOfItems(itemImage): # Gets the amount of ordered items based on an image
     text = GetTextFromImage(itemImage)
     numbers = re.findall(r'\d+', text)
@@ -184,22 +196,8 @@ def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     #print(f"{name} Global Center: ({centerX}, {centerY})")
     return (centerX, centerY)
 
-clickLock = threading.Lock()
-def ClickAt(positionX, positionY):
-    with clickLock:
-        try:
-            autoit.mouse_click("left", positionX, positionY, 2)
-            time.sleep(0.5)
-        except pyautogui.FailSafeException:
-            print("Failsafe triggered, but continuing without warning.")
-
-def ClickOnItem(item):
-    positionX = item.positionOnScreen[0]
-    positionY = item.positionOnScreen[1]
-    #autoit.mouse_click("left", positionX, positionY, 2)
-
 def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
-    global currentOrderState, currentOrderSize
+    global currentOrderState
     try:
         for item in itemsList:
             template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
@@ -224,11 +222,13 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                     match item.itemType:
                         case ItemTypes.DIALOGUE_ITEM:
                             detectedOrderedItems.append(item.itemName)
-                            
-                            # make only the burger items do this logic
-                            item.resquestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w]) # Weird math for cropped image lol
-                            cv.imwrite('saved_region.jpg', regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
-                            print(item.itemName + str(item.resquestedAmount))
+
+                            # Only does this for the burger items so that we get the amounts
+                            if (item.itemName == pattyMeatDialogue.itemName or item.itemName == pattyVeganDialogue.itemName or item.itemName == cheeseOrder.itemName):
+                                item.resquestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w]) # Weird math for cropped image lol
+                                cv.imwrite('saved_region.jpg', regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
+                                print(f"The npc has ordered {str(item.resquestedAmount)} {item.itemName}")
+                        
                         case ItemTypes.MENU_ITEM:
                             detectedMenuItems.append(item.itemName)
                             
@@ -243,22 +243,34 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                         ClickOnItem(burgerBunBottomItem)
 
                         if (pattyMeatDialogue.itemName in detectedOrderedItems):
-                            ClickOnItem(burgerPattyMeatItem)
+                            ClickOnItem(burgerPattyMeatItem, pattyMeatDialogue.resquestedAmount)
                         elif (pattyVeganDialogue.itemName in detectedOrderedItems):
-                            ClickOnItem(burgerPattyVeganItem)
+                            ClickOnItem(burgerPattyVeganItem, pattyVeganDialogue.resquestedAmount)
                         
                         ClickOnItem(burgerCheeseItem)
                         ClickOnItem(burgerBunTopItem)
+                        
+                        ClickOnItem(friesMenuButton)
                         currentOrderState = OrderState.FRIES
                     case OrderState.FRIES:
                         if (normalFryOrder.itemName in detectedOrderedItems):
                             ClickOnItem(normalFriesItem)
+
+                        ClickOnItemSize()
+                        
+                        ClickOnItem(drinkMenuButton)
                         currentOrderState = OrderState.DRINK
                     case OrderState.DRINK:
-                        #print("drink")
+                        if (normalDrinkOrder.itemName in detectedOrderedItems):
+                            ClickOnItem(normalDrinkOrder)
+
+                        ClickOnItemSize()
+                        
+                        ClickOnItem(menuFinishButton)
                         currentOrderState = OrderState.FINISH
                     case OrderState.FINISH:
                         currentOrderState = OrderState.BURGER
+                        #reset all
 
     except Exception as e:
         tb = traceback.format_exc()
@@ -283,6 +295,7 @@ def ShowWindow(image, windowName : str, screenWidth : int):
     neww = screenWidth
     newh = int(neww*(h/w))
     cv.imshow(windowName, cv.resize(image, (neww, newh)))
+    cv.setWindowProperty(windowName, cv.WND_PROP_TOPMOST, 1)  # Set the window property to always on top
 #endregion
 
 TakeScreenshot()

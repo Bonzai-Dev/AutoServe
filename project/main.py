@@ -140,42 +140,37 @@ def GetTextFromImage(image):
     global wowowo
     # Convert the image to grayscale
     gray_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-    
+
+    # Increase contrast
+    alpha = 1 # Contrast control (1.0-3.0)
+    beta = 0    # Brightness control (0-100)
+    contrasted_image = cv.convertScaleAbs(gray_image, alpha=alpha, beta=beta)
+
     # Apply sharpening filter
     sharpening_kernel = np.array([[-1, -1, -1],
-                                  [-1,  10, -1],
+                                  [-1, 9, -1],
                                   [-1, -1, -1]])
-    sharpened_image = cv.filter2D(gray_image, -1, sharpening_kernel)
+    sharpened_image = cv.filter2D(contrasted_image, -1, sharpening_kernel)
 
-    # Apply Gaussian blur to the sharpened image
-    blurred_image = cv.GaussianBlur(sharpened_image, (3, 3), 0)
+    # Apply adaptive thresholding
+    thresholded_image = cv.adaptiveThreshold(sharpened_image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                             cv.THRESH_BINARY, 11, 2)
 
-    # Apply thresholding to the blurred image
-    _, thresholded_image = cv.threshold(blurred_image, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-
-    # Define a larger kernel for morphological operations to remove thin lines
-    kernel = np.ones((2,2), np.uint8)  # Adjust the kernel size as needed
-
-    # Apply morphological opening to remove thin lines
-    opened_image = cv.morphologyEx(thresholded_image, cv.MORPH_OPEN, kernel)
-
-    # Apply morphological closing to smooth edges and close small holes
-    smoothed_image = cv.morphologyEx(opened_image, cv.MORPH_CLOSE, kernel)
-
-    # Scale the smoothed image
-    scale_factor = 3
-    new_width = int(smoothed_image.shape[1] * scale_factor)
-    new_height = int(smoothed_image.shape[0] * scale_factor)
-    scaled_image = cv.resize(smoothed_image, (new_width, new_height), interpolation=cv.INTER_CUBIC)
+    # Scale the image (making it larger can help OCR accuracy)
+    scale_factor = 4
+    new_width = int(thresholded_image.shape[1] * scale_factor)
+    new_height = int(thresholded_image.shape[0] * scale_factor)
+    scaled_image = cv.resize(thresholded_image, (new_width, new_height), interpolation=cv.INTER_LINEAR)
 
     cv.imwrite(f'detected_text_{wowowo}.png', scaled_image)
     wowowo += 1
 
-    # Extracting text from the scaled image
-    text = pytesseract.image_to_string(scaled_image, config='--oem 3 --psm 6')
+    # Extracting text from the scaled image using custom configurations
+    # Using PSM 6 (Assume a single uniform block of text) and whitelisting characters
+    custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    text = pytesseract.image_to_string(scaled_image, config=custom_config)
     print("extracted text: " + text)
     return text
-
 def GetAmountOfItems(itemImage): # Gets the amount of ordered items based on an image
     text = GetTextFromImage(itemImage)
     numbers = re.findall(r'\d+', text)

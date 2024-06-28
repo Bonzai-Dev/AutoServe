@@ -137,13 +137,13 @@ dialogueItems = [
 #region Functions
 wowowo = 0
 def GetTextFromImage(image):
-    global wowowo, dialogueRgb
+    global wowowo
     # Convert the image to grayscale
     gray_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     
     # Apply sharpening filter
     sharpening_kernel = np.array([[-1, -1, -1],
-                                  [-1,  9, -1],
+                                  [-1,  10, -1],
                                   [-1, -1, -1]])
     sharpened_image = cv.filter2D(gray_image, -1, sharpening_kernel)
 
@@ -153,25 +153,26 @@ def GetTextFromImage(image):
     # Apply thresholding to the blurred image
     _, thresholded_image = cv.threshold(blurred_image, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
 
-    # Define a kernel for morphological operations
-    kernel = np.ones((2,2), np.uint8)
+    # Define a larger kernel for morphological operations to remove thin lines
+    kernel = np.ones((2,2), np.uint8)  # Adjust the kernel size as needed
 
-    # Apply morphological opening to smooth edges
-    smoothed_image = cv.morphologyEx(thresholded_image, cv.MORPH_OPEN, kernel)
+    # Apply morphological opening to remove thin lines
+    opened_image = cv.morphologyEx(thresholded_image, cv.MORPH_OPEN, kernel)
+
+    # Apply morphological closing to smooth edges and close small holes
+    smoothed_image = cv.morphologyEx(opened_image, cv.MORPH_CLOSE, kernel)
 
     # Scale the smoothed image
     scale_factor = 3
     new_width = int(smoothed_image.shape[1] * scale_factor)
     new_height = int(smoothed_image.shape[0] * scale_factor)
     scaled_image = cv.resize(smoothed_image, (new_width, new_height), interpolation=cv.INTER_CUBIC)
-    blurred_image = cv.GaussianBlur(scaled_image, (3, 3), 0)
-    _, thresholded_image = cv.threshold(blurred_image, 127, 255, cv.THRESH_BINARY)
 
-    cv.imwrite(f'detected_text_{wowowo}.png', thresholded_image)
+    cv.imwrite(f'detected_text_{wowowo}.png', scaled_image)
     wowowo += 1
 
     # Extracting text from the scaled image
-    text = pytesseract.image_to_string(thresholded_image, config='--oem 3 --psm 6')
+    text = pytesseract.image_to_string(scaled_image, config='--oem 3 --psm 6')
     print("extracted text: " + text)
     return text
 
@@ -200,7 +201,7 @@ def ClickAt(positionX, positionY):
 def ClickOnItem(item):
     positionX = item.positionOnScreen[0]
     positionY = item.positionOnScreen[1]
-    autoit.mouse_click("left", positionX, positionY, 2)
+    #autoit.mouse_click("left", positionX, positionY, 2)
 
 def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
     global currentOrderState, currentOrderSize
@@ -228,6 +229,8 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                     match item.itemType:
                         case ItemTypes.DIALOGUE_ITEM:
                             detectedOrderedItems.append(item.itemName)
+                            
+                            # make only the burger items do this logic
                             item.resquestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w]) # Weird math for cropped image lol
                             cv.imwrite('saved_region.jpg', regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
                             print(item.itemName + str(item.resquestedAmount))

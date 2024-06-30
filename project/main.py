@@ -8,14 +8,16 @@ import pyautogui
 import ctypes
 import time
 import numpy as np
-from PIL import Image
 import pytesseract
-from enum import Enum, auto
 import re
 import ctypes
 import traceback
 import threading
 import autoit
+
+from numba import jit, cuda 
+from enum import Enum, auto
+from PIL import Image
 
 # Make the program DPI aware to handle display scaling properly
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -50,11 +52,11 @@ class OrderSizes(Enum):
 
 class OrderState(Enum):
     BURGER = auto()
-    DRINK = auto()
     FRIES = auto()
+    DRINK = auto()
     FINISH = auto()
 
-currentOrderState = OrderState.FRIES
+currentOrderState = OrderState.BURGER
 detectedOrderedItems = []
 detectedMenuItems = []
 detectedItems = []
@@ -62,13 +64,13 @@ detectedItems = []
 #region Classes
 #NOTE IF STARTPOSITION IS SET TO 0,0 IT WILL NOT WORK
 class Item:
-    def __init__(self, image : str, outlineColor : tuple[int, int, int], itemName: str, itemType : ItemTypes, positionOnScreen : tuple[int, int] = (0, 0), resquestedAmount : int = 1):
+    def __init__(self, image : str, outlineColor : tuple[int, int, int], itemName: str, itemType : ItemTypes, positionOnScreen : tuple[int, int] = (0, 0), requestedAmount : int = 1):
         self.image = image # Image path
         self.outlineColor = outlineColor # Format in BGR
         self.itemName = itemName
         self.itemType = itemType
         self.positionOnScreen = positionOnScreen
-        self.resquestedAmount = resquestedAmount
+        self.requestedAmount = requestedAmount
 
 # Images for menu items including buttons
 burgerMenuButton = Item(r"project\img\menuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", ItemTypes.MENU_ITEM)
@@ -134,57 +136,61 @@ dialogueItems = [
 #endregion
 
 #region Functions
-def ClickOnItem(item, amount : int = 1):
+def ClickOnItem(item : Item):
     positionX = item.positionOnScreen[0]
     positionY = item.positionOnScreen[1]
-    autoit.mouse_click("left", positionX, positionY, amount, 2)
+    autoit.mouse_click("left", positionX, positionY, item.requestedAmount, 2)
 
 def ClickOnItemSize():
     # Removing all of the items from list once detected so that we can readd them again to prevent duplicates
-    if (smallSizeDialogue in detectedOrderedItems):
+    if (smallSizeDialogue.itemName in detectedOrderedItems):
         ClickOnItem(smallSizeMenu)
-        detectedOrderedItems.remove(smallSizeDialogue)
-    elif (mediumSizeDialogue in detectedOrderedItems):
+        print("SMALL SIZE DETECTED")
+        detectedOrderedItems.remove(smallSizeDialogue.itemName)
+    elif (mediumSizeDialogue.itemName in detectedOrderedItems):
         ClickOnItem(mediumSizeMenu)
-        detectedOrderedItems.remove(mediumSizeDialogue)
-    elif (largeSizeDialogue in detectedOrderedItems):
+        print("MEDIUM SIZE DETECTED")
+        detectedOrderedItems.remove(mediumSizeDialogue.itemName)
+    elif (largeSizeDialogue.itemName in detectedOrderedItems):
         ClickOnItem(largeSizeMenu)
-        detectedOrderedItems.remove(largeSizeDialogue)
+        print("LARGE SIZE DETECTED")
+        detectedOrderedItems.remove(largeSizeDialogue.itemName)
 
-def GetTextFromImage(image):
+
+def GetTextFromImage(image, name):
     # Convert the image to grayscale
-    gray_image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    grayImage = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
     # Increase contrast
-    alpha = 1 # Contrast control (1.0-3.0)
+    alpha = 1  # Contrast control (1.0-3.0)
     beta = 0    # Brightness control (0-100)
-    contrasted_image = cv.convertScaleAbs(gray_image, alpha=alpha, beta=beta)
+    contrastedImage = cv.convertScaleAbs(grayImage, alpha=alpha, beta=beta)
 
     # Apply sharpening filter
-    sharpening_kernel = np.array([[-1, -1, -1],
-                                  [-1, 9, -1],
-                                  [-1, -1, -1]])
-    sharpened_image = cv.filter2D(contrasted_image, -1, sharpening_kernel)
+    sharpeningKernel = np.array([[-1, -1, -1],
+                                 [-1, 9, -1],
+                                 [-1, -1, -1]])
+    sharpenedImage = cv.filter2D(contrastedImage, -1, sharpeningKernel)
 
     # Apply adaptive thresholding
-    thresholded_image = cv.adaptiveThreshold(sharpened_image, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                             cv.THRESH_BINARY, 11, 2)
+    thresholdedImage = cv.adaptiveThreshold(sharpenedImage, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                            cv.THRESH_BINARY, 11, 2)
 
     # Scale the image (making it larger can help OCR accuracy)
-    scale_factor = 4
-    new_width = int(thresholded_image.shape[1] * scale_factor)
-    new_height = int(thresholded_image.shape[0] * scale_factor)
-    scaled_image = cv.resize(thresholded_image, (new_width, new_height), interpolation=cv.INTER_LINEAR)
+    scaleFactor = 4
+    newWidth = int(thresholdedImage.shape[1] * scaleFactor)
+    newHeight = int(thresholdedImage.shape[0] * scaleFactor)
+    scaledImage = cv.resize(thresholdedImage, (newWidth, newHeight), interpolation=cv.INTER_LINEAR)
 
     # Extracting text from the scaled image using custom configurations
     # Using PSM 6 (Assume a single uniform block of text) and whitelisting characters
-    custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    text = pytesseract.image_to_string(scaled_image, config=custom_config)
-    print("extracted text: " + text)
+    customConfig = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    text = pytesseract.image_to_string(scaledImage, config=customConfig)
+    #print("extracted text from: " + name + " is: " + text)
     return text
 
-def GetAmountOfItems(itemImage): # Gets the amount of ordered items based on an image
-    text = GetTextFromImage(itemImage)
+def GetAmountOfItems(itemImage, name): # Gets the amount of ordered items based on an image
+    text = GetTextFromImage(itemImage, name)
     numbers = re.findall(r'\d+', text)
     if (numbers): 
         return int(numbers[0])
@@ -197,8 +203,8 @@ def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     return (centerX, centerY)
 
 def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
-    global currentOrderState
     try:
+        global currentOrderState
         for item in itemsList:
             template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
             template = cv.adaptiveThreshold(template, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
@@ -219,15 +225,14 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                 if not any(detected.itemName == item.itemName for detected in detectedItems):
                     detectedItems.append(item)
                     item.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuRegion[0:2])
-                    match item.itemType:
+                    match item.itemType:    
                         case ItemTypes.DIALOGUE_ITEM:
                             detectedOrderedItems.append(item.itemName)
 
                             # Only does this for the burger items so that we get the amounts
                             if (item.itemName == pattyMeatDialogue.itemName or item.itemName == pattyVeganDialogue.itemName or item.itemName == cheeseOrder.itemName):
-                                item.resquestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w]) # Weird math for cropped image lol
-                                cv.imwrite('saved_region.jpg', regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
-                                print(f"The npc has ordered {str(item.resquestedAmount)} {item.itemName}")
+                                item.requestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w], item.itemName) # Weird for cropped image lol
+                                #print(f"The npc has ordered {str(item.requestedAmount)} {item.itemName}")
                         
                         case ItemTypes.MENU_ITEM:
                             detectedMenuItems.append(item.itemName)
@@ -235,43 +240,55 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                 cv.rectangle(regionRgb, point, (point[0] + w, point[1] + h), item.outlineColor, 3)
                 cv.putText(regionRgb, item.itemName, (point[0], point[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)            
                 cv.circle(regionRgb, (point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2), 5, (255, 255, 255), 2)
-
-        for detectedItem in detectedItems:
+            
+        if (len(detectedOrderedItems) > 0):
             if item.positionOnScreen != (0, 0):
                 match currentOrderState:
                     case OrderState.BURGER:
-                        ClickOnItem(burgerBunBottomItem)
-
-                        if (pattyMeatDialogue.itemName in detectedOrderedItems):
-                            ClickOnItem(burgerPattyMeatItem, pattyMeatDialogue.resquestedAmount)
-                        elif (pattyVeganDialogue.itemName in detectedOrderedItems):
-                            ClickOnItem(burgerPattyVeganItem, pattyVeganDialogue.resquestedAmount)
-                        
-                        ClickOnItem(burgerCheeseItem)
-                        ClickOnItem(burgerBunTopItem)
-                        
-                        ClickOnItem(friesMenuButton)
-                        currentOrderState = OrderState.FRIES
+                        # Add a extra check here so that it checks if the NPC has ordered a patty. This is to wait until the order loads.
+                        if (pattyMeatDialogue.itemName in detectedOrderedItems or pattyVeganDialogue.itemName in detectedOrderedItems):
+                            ClickOnItem(burgerBunBottomItem)
+                            
+                            if (pattyMeatDialogue.itemName in detectedOrderedItems):
+                                ClickOnItem(burgerPattyMeatItem)
+                            elif (pattyVeganDialogue.itemName in detectedOrderedItems):
+                                ClickOnItem(burgerPattyVeganItem)
+                            
+                            if (cheeseOrder.itemName in detectedOrderedItems):
+                                ClickOnItem(burgerCheeseItem)
+                                print(burgerCheeseItem.requestedAmount)
+                            
+                            ClickOnItem(burgerBunTopItem)
+                            
+                            ClickOnItem(friesMenuButton)
+                            time.sleep(1)
+                            currentOrderState = OrderState.FRIES
                     case OrderState.FRIES:
+                        # Check if the fries order is in the detectedOrderedItems list, since theres still orders that we havent unlocked yet
                         if (normalFryOrder.itemName in detectedOrderedItems):
-                            ClickOnItem(normalFriesItem)
+                            if (normalFryOrder.itemName in detectedOrderedItems):
+                                ClickOnItem(normalFriesItem)
 
-                        ClickOnItemSize()
-                        
-                        ClickOnItem(drinkMenuButton)
-                        currentOrderState = OrderState.DRINK
+                            ClickOnItemSize()
+                            
+                            ClickOnItem(drinkMenuButton)
+                            time.sleep(1)
+                            currentOrderState = OrderState.DRINK
                     case OrderState.DRINK:
                         if (normalDrinkOrder.itemName in detectedOrderedItems):
-                            ClickOnItem(normalDrinkOrder)
+                            if (normalDrinkOrder.itemName in detectedOrderedItems):
+                                print(normalDrinkOrder.positionOnScreen)
+                                ClickOnItem(normalDrinkOrder)
 
-                        ClickOnItemSize()
-                        
-                        ClickOnItem(menuFinishButton)
-                        currentOrderState = OrderState.FINISH
+                            '''print(detectedOrderedItems)
+                            ClickOnItemSize()
+                            
+                        ClickOnItem(menuFinishButton)'''
+                        #currentOrderState = OrderState.FINISH
                     case OrderState.FINISH:
                         currentOrderState = OrderState.BURGER
                         #reset all
-
+                        
     except Exception as e:
         tb = traceback.format_exc()
         print(f"An error occurred in DetectElementInRegion: {e}\nTraceback: {tb}")
@@ -302,11 +319,12 @@ TakeScreenshot()
 try:
     while True:
         TakeScreenshot()
-        DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems, 0.57)
-        DetectElementInRegion(menuRgb, menuGray, menuItems, 0.6)
+        threading.Thread(DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems, 0.6)).start()
+        threading.Thread(DetectElementInRegion(menuRgb, menuGray, menuItems, 0.6)).start()
 
         ShowWindow(dialogueRgb, dialogueWindowName, 400)
         ShowWindow(menuRgb, menuWindowName, 400)
+        
         if cv.waitKey(1) & 0xFF == ord('q'):
             break
         time.sleep(screenShotRate)
@@ -316,5 +334,5 @@ except Exception as e:
 
 
 '''for item in detectedOrderedItems:
-    print(item.itemName)'''
+    print(item)'''
     

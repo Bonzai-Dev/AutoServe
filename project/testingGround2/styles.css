@@ -1,37 +1,38 @@
-body {
+body, html {
     margin: 0;
     padding: 0;
-    background-color: rgb(28, 28, 28);
-    scroll-snap-type: both mandatory;
+    height: 100%;
 }
 
-body::-webkit-scrollbar {
+/* Hide scrollbar for Webkit and Blink browsers */
+::-webkit-scrollbar {
     display: none;
 }
 
+/* Hide scrollbar for Firefox */
+* {
+    scrollbar-width: none;
+}
+
+/* For the scrollContainer specifically, if you prefer targeting it directly */
+.scrollContainer::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollContainer {
+    scrollbar-width: none;
+}
+
+.scrollContainer {
+    height: 100vh; /* Full viewport height */
+    overflow-y: scroll; /* Enable vertical scrolling */
+    scroll-snap-type: y mandatory; /* Apply vertical scroll snapping */
+}
+
 .containerParent {
+    height: 100vh; /* Full viewport height for each section */
+    scroll-snap-align: start; /* Align the start edge of the element with the scroll container's start edge */
     background-size: cover;
     background-repeat: no-repeat;
-    scroll-snap-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    width: 100%;
-}
-
-.container {
-    background-color: rgb(26, 0, 154);
-    border-radius: 20px;
-    height: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.icon {
-    width: 150px;
-    height: auto;
-    margin: 20px;
+    width: 100%; /* Ensure full width */
 }

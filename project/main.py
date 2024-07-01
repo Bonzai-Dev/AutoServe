@@ -114,16 +114,16 @@ menuItems = [
     friesMenuButton,
     drinkMenuButton,
     menuFinishButton,
-    
-    normalFriesItem,
-    
-    normalDrinkItem,
-    
+        
     burgerBunTopItem,
     burgerCheeseItem,
     burgerPattyVeganItem,
     burgerPattyMeatItem,
     burgerBunBottomItem,
+    
+    normalFriesItem,
+    
+    normalDrinkItem,
 ]
 
 dialogueItems = [
@@ -147,18 +147,18 @@ def ClickOnItem(item : Item):
 
 def ClickOnItemSize():
     # Removing all of the items from list once detected so that we can readd them again to prevent duplicates
-    if (smallSizeDialogue.itemName in detectedOrderedItems):
+    if (smallSizeDialogue in detectedOrderedItems):
         ClickOnItem(smallSizeMenu)
         print("SMALL SIZE DETECTED")
-        detectedOrderedItems.remove(smallSizeDialogue.itemName)
-    elif (mediumSizeDialogue.itemName in detectedOrderedItems):
+        detectedOrderedItems.remove(smallSizeDialogue)
+    elif (mediumSizeDialogue in detectedOrderedItems):
         ClickOnItem(mediumSizeMenu)
         print("MEDIUM SIZE DETECTED")
-        detectedOrderedItems.remove(mediumSizeDialogue.itemName)
-    elif (largeSizeDialogue.itemName in detectedOrderedItems):
+        detectedOrderedItems.remove(mediumSizeDialogue)
+    elif (largeSizeDialogue in detectedOrderedItems):
         ClickOnItem(largeSizeMenu)
         print("LARGE SIZE DETECTED")
-        detectedOrderedItems.remove(largeSizeDialogue.itemName)
+        detectedOrderedItems.remove(largeSizeDialogue)
 
 
 def GetTextFromImage(image, name):
@@ -203,15 +203,17 @@ def GetAmountOfItems(itemImage, name): # Gets the amount of ordered items based 
 def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     centerX = int(point[0] + template.shape[1] // 2 + regionTopLeft[0])
     centerY = int(point[1] + template.shape[0] // 2 + regionTopLeft[1])
-    print(f"{name} Global Center: ({centerX}, {centerY})")
+    #print(f"{name} Global Center: ({centerX}, {centerY})")
     return (centerX, centerY)
 
 def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0.8):
     try:
         global currentOrderState
-
+        
         for item in itemsList:
-            print("Detecting " + item.itemName)
+            '''if(item.itemName == normalDrinkItem.itemName):
+                print("Normal drink item detected")'''
+            
             template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
             template = cv.adaptiveThreshold(template, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
             regionAdaptiveThresh = cv.adaptiveThreshold(regionGray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
@@ -225,15 +227,14 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                 if all(np.linalg.norm(np.array(point) - np.array(p)) >= 10 for p in filteredPoints):
                     filteredPoints.append(point)
                     break  
-            
+        
             for point in filteredPoints:
-                # Check if any item in detectedItems has the same itemName as the current item
-                if not any(detected.itemName == item.itemName for detected in detectedItems):
+                if (item.positionOnScreen == (0, 0)):
                     detectedItems.append(item)
                     item.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuRegion[0:2])
                     match item.itemType:    
                         case ItemTypes.DIALOGUE_ITEM:
-                            detectedOrderedItems.append(item.itemName)
+                            detectedOrderedItems.append(item)
 
                             # Only does this for the burger items so that we get the amounts
                             if (item.itemName == pattyMeatDialogue.itemName or item.itemName == pattyVeganDialogue.itemName or item.itemName == cheeseOrder.itemName):
@@ -241,66 +242,67 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                                 #print(f"The npc has ordered {str(item.requestedAmount)} {item.itemName}")
                         
                         case ItemTypes.MENU_ITEM:
-                            detectedMenuItems.append(item.itemName)
-                            
+                            detectedMenuItems.append(item)
+                                
                 cv.rectangle(regionRgb, point, (point[0] + w, point[1] + h), item.outlineColor, 3)
                 cv.putText(regionRgb, item.itemName, (point[0], point[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)            
                 cv.circle(regionRgb, (point[0] + template.shape[1] // 2, point[1] + template.shape[0] // 2), 5, (255, 255, 255), 2)
         
-        if (item.positionOnScreen != (0, 0)):
-            print(f"Item: {item.itemName} Position: {item.positionOnScreen}")
-            match currentOrderState:
-                case OrderState.BURGER:
-                    # Add a extra check here so that it checks if the NPC has ordered a patty. This is to wait until the order loads.
-                    if (pattyMeatDialogue.itemName in detectedOrderedItems or pattyVeganDialogue.itemName in detectedOrderedItems):
-                        ClickOnItem(burgerBunBottomItem)
-                        
-                        if (pattyMeatDialogue.itemName in detectedOrderedItems):
-                            ClickOnItem(burgerPattyMeatItem)
-                        elif (pattyVeganDialogue.itemName in detectedOrderedItems):
-                            ClickOnItem(burgerPattyVeganItem)
-                        
-                        if (cheeseOrder.itemName in detectedOrderedItems):
-                            ClickOnItem(burgerCheeseItem)
-                            print(burgerCheeseItem.requestedAmount)
-                        
-                        ClickOnItem(burgerBunTopItem)
-                        
-                        ClickOnItem(friesMenuButton)
-                        time.sleep(1)
-                        currentOrderState = OrderState.FRIES
-                case OrderState.FRIES:
-                    # Check if the fries order is in the detectedOrderedItems list, since theres still orders that we havent unlocked yet
-                    if (normalFryOrder.itemName in detectedOrderedItems):
-                        if (normalFryOrder.itemName in detectedOrderedItems):
-                            ClickOnItem(normalFriesItem)
-
-                        ClickOnItemSize()
-                        
-                        ClickOnItem(drinkMenuButton)
-                        time.sleep(1)
-                        currentOrderState = OrderState.DRINK
-                case OrderState.DRINK:
-                    if (normalDrinkOrder.itemName in detectedOrderedItems):
-                        if (normalDrinkOrder.itemName in detectedOrderedItems):
-                            print(detectedMenuItems)
-                            print(normalDrinkItem.positionOnScreen)
-                            
-                            ClickOnItem(normalDrinkItem)
-
-                        print(detectedOrderedItems)
-                        ClickOnItemSize()
-                        
-                    ClickOnItem(menuFinishButton)
-                    currentOrderState = OrderState.FINISH
-                case OrderState.FINISH:
-                    #currentOrderState = OrderState.BURGER
-                    #reset all
-                    return
-                                
     except Exception as e:
         tb = traceback.format_exc()
         print(f"An error occurred in DetectElementInRegion: {e}\nTraceback: {tb}")
+        
+def ProcessOrder():
+    global currentOrderState
+    
+    if all(item.positionOnScreen != (0, 0) for item in detectedMenuItems):
+        print("First: ", normalDrinkItem.positionOnScreen)
+        print("Second: ", normalDrinkItem.positionOnScreen)
+
+        match currentOrderState:
+            case OrderState.BURGER:
+                # Add a extra check here so that it checks if the NPC has ordered a patty. This is to wait until the order loads.
+                if (pattyMeatDialogue in detectedOrderedItems or pattyVeganDialogue in detectedOrderedItems):
+                    ClickOnItem(burgerBunBottomItem)
+                    
+                    if (pattyMeatDialogue in detectedOrderedItems):
+                        ClickOnItem(burgerPattyMeatItem)
+                    elif (pattyVeganDialogue in detectedOrderedItems):
+                        ClickOnItem(burgerPattyVeganItem)
+                    
+                    if (cheeseOrder in detectedOrderedItems):
+                        ClickOnItem(burgerCheeseItem)
+                        print(burgerCheeseItem.requestedAmount)
+                    
+                    ClickOnItem(burgerBunTopItem)
+                    
+                    ClickOnItem(friesMenuButton)
+                    time.sleep(1)
+                    currentOrderState = OrderState.FRIES
+            case OrderState.FRIES:
+                # Check if the fries order is in the detectedOrderedItems list, since theres still orders that we havent unlocked yet
+                if (normalFryOrder in detectedOrderedItems):
+                    if (normalFryOrder in detectedOrderedItems):
+                        ClickOnItem(normalFriesItem)
+
+                    ClickOnItemSize()
+                    
+                    ClickOnItem(drinkMenuButton)
+                    time.sleep(1)
+                    currentOrderState = OrderState.DRINK
+            case OrderState.DRINK:
+                if (normalDrinkOrder in detectedOrderedItems):
+                    if (normalDrinkOrder in detectedOrderedItems):
+                        ClickOnItem(normalDrinkItem)
+
+                    ClickOnItemSize()
+                    
+                ClickOnItem(menuFinishButton)
+                currentOrderState = OrderState.FINISH
+            case OrderState.FINISH:
+                #currentOrderState = OrderState.BURGER
+                #reset all
+                return
         
 def TakeScreenshot():
     global dialogue, dialogueRgb, dialogueBgr, dialogueGray, menu, menuRgb, menuBgr, menuGray
@@ -328,13 +330,16 @@ TakeScreenshot()
 try:
     while True:
         TakeScreenshot()
+        
         DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems, 0.6)
         DetectElementInRegion(menuRgb, menuGray, menuItems, 0.6)
+
+        ProcessOrder()
 
         # Add these functions in the detect element in region
         ShowWindow(dialogueRgb, dialogueWindowName, 400)
         ShowWindow(menuRgb, menuWindowName, 400)
-        
+                
         if cv.waitKey(1) & 0xFF == ord('q'):
             break
         time.sleep(screenShotRate)

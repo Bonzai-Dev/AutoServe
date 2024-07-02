@@ -26,7 +26,7 @@ pytesseract.pytesseract.tesseract_cmd = r"project\Tesseract-OCR\tesseract.exe"
 dialogueRegion = (787, 290, 355, 140) # x, y, width, height
 menuRegion = (1373, 210, 550, 700)
 
-screenShotRate = 0.2 # in seconds
+screenShotRate = 0.3 # in seconds
 dialogueWindowName = "Dialogue AI view"
 menuWindowName = "Menu AI view"
 #windowWidth = 300; # in pixels and will automatically adjust its height
@@ -60,6 +60,7 @@ currentOrderState = OrderState.BURGER
 detectedOrderedItems = []
 detectedMenuItems = []
 detectedItems = []
+detectedItemAmounts = []
 
 #region Classes
 #NOTE IF STARTPOSITION IS SET TO 0,0 IT WILL NOT WORK
@@ -96,6 +97,11 @@ pattyVeganDialogue = Item(r"project\img\dialogueItems\burger\PattyVeganDialogue.
 normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order", ItemTypes.DIALOGUE_ITEM)
 normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order", ItemTypes.DIALOGUE_ITEM)
 
+
+oneItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountOne.png", (0, 0, 255), "One item amount", ItemTypes.DIALOGUE_ITEM)
+twoItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountTwo.png", (0, 0, 255), "Two item amount", ItemTypes.DIALOGUE_ITEM)
+
+
 smallSizeMenu = Item(r"project\img\sizes\menu\Small.png", (0, 255, 0), "Small size menu", ItemTypes.MENU_ITEM)
 mediumSizeMenu = Item(r"project\img\sizes\menu\Medium.png", (0, 255, 0), "Medium size menu", ItemTypes.MENU_ITEM)
 largeSizeMenu = Item(r"project\img\sizes\menu\Large.png", (0, 255, 0), "Lage size menu", ItemTypes.MENU_ITEM)
@@ -131,11 +137,19 @@ dialogueItems = [
     mediumSizeDialogue,
     largeSizeDialogue,
     
+    oneItemOrder,
+    twoItemOrder,
+    
     cheeseOrder, 
     pattyMeatDialogue,
     pattyVeganDialogue,
     normalFryOrder,
     normalDrinkOrder,
+]
+
+itemAmounts = [
+    oneItemOrder,
+    twoItemOrder,
 ]
 #endregion
 
@@ -143,7 +157,9 @@ dialogueItems = [
 def ClickOnItem(item : Item):
     positionX = item.positionOnScreen[0]
     positionY = item.positionOnScreen[1]
-    autoit.mouse_click("left", positionX, positionY, item.requestedAmount, -1)
+
+    for i in range(item.requestedAmount):
+        autoit.mouse_click("left", positionX, positionY, 1, -1)
 
 def ClickOnItemSize():
     # Removing all of the items from list once detected so that we can readd them again to prevent duplicates
@@ -160,46 +176,43 @@ def ClickOnItemSize():
         print("LARGE SIZE DETECTED")
         detectedOrderedItems.remove(largeSizeDialogue)
 
+def GetAmountOfItems(regionImage):
+    global detectedItemAmounts
+    
+    regionGray = cv.cvtColor(regionImage, cv.COLOR_BGR2GRAY)
+    timestamp = int(time.time())  # Current timestamp as an integer
+    filename = f"saved_image_{timestamp}.png"  # Unique filename using the timestamp
 
-def GetTextFromImage(image, name):
-    # Convert the image to grayscale
-    grayImage = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-
-    # Increase contrast
-    alpha = 1  # Contrast control (1.0-3.0)
-    beta = 0    # Brightness control (0-100)
-    contrastedImage = cv.convertScaleAbs(grayImage, alpha=alpha, beta=beta)
-
-    # Apply sharpening filter
-    sharpeningKernel = np.array([[-1, -1, -1],
-                                 [-1, 9, -1],
-                                 [-1, -1, -1]])
-    sharpenedImage = cv.filter2D(contrastedImage, -1, sharpeningKernel)
-
-    # Apply adaptive thresholding
-    thresholdedImage = cv.adaptiveThreshold(sharpenedImage, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, 
-                                            cv.THRESH_BINARY, 11, 2)
-
-    # Scale the image (making it larger can help OCR accuracy)
-    scaleFactor = 4
-    newWidth = int(thresholdedImage.shape[1] * scaleFactor)
-    newHeight = int(thresholdedImage.shape[0] * scaleFactor)
-    scaledImage = cv.resize(thresholdedImage, (newWidth, newHeight), interpolation=cv.INTER_LINEAR)
-
-    # Extracting text from the scaled image using custom configurations
-    # Using PSM 6 (Assume a single uniform block of text) and whitelisting characters
-    customConfig = r'--oem 3 --psm 6 -c tessedit_char_whitelist=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    text = pytesseract.image_to_string(scaledImage, config=customConfig)
-    #print("extracted text from: " + name + " is: " + text)
-    return text
-
-def GetAmountOfItems(itemImage, name): # Gets the amount of ordered items based on an image
-    text = GetTextFromImage(itemImage, name)
-    numbers = re.findall(r'\d+', text)
-    if (numbers): 
-        return int(numbers[0])
+    cv.imwrite(filename, regionGray)  # Save the image
+    for item in itemAmounts:        
+        # Preventing spams of the same item
+        if (item not in detectedItemAmounts):
+            detectedItemAmounts.append(item)
+            print(item.itemName)
+            
+            template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
+            template = cv.adaptiveThreshold(template, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+            regionAdaptiveThresh = cv.adaptiveThreshold(regionGray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+            resolution = cv.matchTemplate(regionAdaptiveThresh, template, cv.TM_CCOEFF_NORMED)
+            locate = np.where(resolution >= 0.6)
+            points = list(zip(*locate[::-1]))
+        
+            filteredPoints = []
+            for point in points:
+                if all(np.linalg.norm(np.array(point) - np.array(p)) >= 10 for p in filteredPoints):
+                    filteredPoints.append(point)
+                    break  
+        
+            for point in filteredPoints:
+                match item.itemName:
+                    case oneItemOrder.itemName:
+                        return 1
+                    case twoItemOrder.itemName:
+                        return 2
+                    case _:
+                        return 1
     return 1
-
+    
 def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     centerX = int(point[0] + template.shape[1] // 2 + regionTopLeft[0])
     centerY = int(point[1] + template.shape[0] // 2 + regionTopLeft[1])
@@ -211,9 +224,6 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
         global currentOrderState
         
         for item in itemsList:
-            '''if(item.itemName == normalDrinkItem.itemName):
-                print("Normal drink item detected")'''
-            
             template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
             template = cv.adaptiveThreshold(template, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
             regionAdaptiveThresh = cv.adaptiveThreshold(regionGray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
@@ -229,19 +239,27 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                     break  
         
             for point in filteredPoints:
-                if (item.positionOnScreen == (0, 0)):
+                if (item not in detectedItems):
                     detectedItems.append(item)
                     item.positionOnScreen = GetGlobalItemCenterPosition(point, template, item.itemName, menuRegion[0:2])
-                    match item.itemType:    
-                        case ItemTypes.DIALOGUE_ITEM:
+                
+                match item.itemType:                        
+                    case ItemTypes.DIALOGUE_ITEM:
+                        if (item not in detectedOrderedItems):
                             detectedOrderedItems.append(item)
 
-                            # Only does this for the burger items so that we get the amounts
-                            if (item.itemName == pattyMeatDialogue.itemName or item.itemName == pattyVeganDialogue.itemName or item.itemName == cheeseOrder.itemName):
-                                item.requestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w], item.itemName) # Weird for cropped image lol
-                                #print(f"The npc has ordered {str(item.requestedAmount)} {item.itemName}")
-                        
-                        case ItemTypes.MENU_ITEM:
+                        # Get amount of items based on the dialogue item
+                        match item.itemName:
+                            case cheeseOrder.itemName:
+                                burgerCheeseItem.requestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
+                                print("Cheese: ", burgerCheeseItem.requestedAmount)
+                            case pattyMeatDialogue.itemName:
+                                burgerPattyMeatItem.requestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
+                            case pattyVeganDialogue.itemName:
+                                burgerPattyVeganItem.requestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
+                                            
+                    case ItemTypes.MENU_ITEM:
+                        if (item not in detectedMenuItems):
                             detectedMenuItems.append(item)
                                 
                 cv.rectangle(regionRgb, point, (point[0] + w, point[1] + h), item.outlineColor, 3)
@@ -256,9 +274,6 @@ def ProcessOrder():
     global currentOrderState
     
     if all(item.positionOnScreen != (0, 0) for item in detectedMenuItems):
-        print("First: ", normalDrinkItem.positionOnScreen)
-        print("Second: ", normalDrinkItem.positionOnScreen)
-
         match currentOrderState:
             case OrderState.BURGER:
                 # Add a extra check here so that it checks if the NPC has ordered a patty. This is to wait until the order loads.
@@ -271,13 +286,12 @@ def ProcessOrder():
                         ClickOnItem(burgerPattyVeganItem)
                     
                     if (cheeseOrder in detectedOrderedItems):
+                        # CHECK THE LEN OF THE DETECTED AMOUNT OF ITEMS LIST TO WAIT FOR THE AMOUNT OF ITEMS TO BE DETECTED
                         ClickOnItem(burgerCheeseItem)
-                        print(burgerCheeseItem.requestedAmount)
                     
                     ClickOnItem(burgerBunTopItem)
                     
                     ClickOnItem(friesMenuButton)
-                    time.sleep(1)
                     currentOrderState = OrderState.FRIES
             case OrderState.FRIES:
                 # Check if the fries order is in the detectedOrderedItems list, since theres still orders that we havent unlocked yet
@@ -288,7 +302,6 @@ def ProcessOrder():
                     ClickOnItemSize()
                     
                     ClickOnItem(drinkMenuButton)
-                    time.sleep(1)
                     currentOrderState = OrderState.DRINK
             case OrderState.DRINK:
                 if (normalDrinkOrder in detectedOrderedItems):
@@ -300,8 +313,9 @@ def ProcessOrder():
                 ClickOnItem(menuFinishButton)
                 currentOrderState = OrderState.FINISH
             case OrderState.FINISH:
-                #currentOrderState = OrderState.BURGER
-                #reset all
+                time.sleep(1)
+                currentOrderState = OrderState.BURGER
+                detectedOrderedItems.clear()
                 return
         
 def TakeScreenshot():
@@ -331,7 +345,7 @@ try:
     while True:
         TakeScreenshot()
         
-        DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems, 0.6)
+        DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems, 0.585)
         DetectElementInRegion(menuRgb, menuGray, menuItems, 0.6)
 
         ProcessOrder()

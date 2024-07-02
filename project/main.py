@@ -26,7 +26,7 @@ pytesseract.pytesseract.tesseract_cmd = r"project\Tesseract-OCR\tesseract.exe"
 dialogueRegion = (787, 290, 355, 140) # x, y, width, height
 menuRegion = (1373, 210, 550, 700)
 
-screenShotRate = 0.3 # in seconds
+screenShotRate = 0.8 # in seconds
 dialogueWindowName = "Dialogue AI view"
 menuWindowName = "Menu AI view"
 #windowWidth = 300; # in pixels and will automatically adjust its height
@@ -60,7 +60,6 @@ currentOrderState = OrderState.BURGER
 detectedOrderedItems = []
 detectedMenuItems = []
 detectedItems = []
-detectedItemAmounts = []
 
 #region Classes
 #NOTE IF STARTPOSITION IS SET TO 0,0 IT WILL NOT WORK
@@ -99,7 +98,7 @@ normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.p
 
 
 oneItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountOne.png", (0, 0, 255), "One item amount", ItemTypes.DIALOGUE_ITEM)
-twoItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountTwo.png", (0, 0, 255), "Two item amount", ItemTypes.DIALOGUE_ITEM)
+twoItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountTwo.png", (255, 0, 0), "Two item amount", ItemTypes.DIALOGUE_ITEM)
 
 
 smallSizeMenu = Item(r"project\img\sizes\menu\Small.png", (0, 255, 0), "Small size menu", ItemTypes.MENU_ITEM)
@@ -136,10 +135,7 @@ dialogueItems = [
     smallSizeDialogue,
     mediumSizeDialogue,
     largeSizeDialogue,
-    
-    oneItemOrder,
-    twoItemOrder,
-    
+
     cheeseOrder, 
     pattyMeatDialogue,
     pattyVeganDialogue,
@@ -157,9 +153,10 @@ itemAmounts = [
 def ClickOnItem(item : Item):
     positionX = item.positionOnScreen[0]
     positionY = item.positionOnScreen[1]
-
+    print(item.itemName,item.requestedAmount)
     for i in range(item.requestedAmount):
-        autoit.mouse_click("left", positionX, positionY, 1, -1)
+        autoit.mouse_click("left", positionX, positionY, 1, 2)
+        time.sleep(0.3)
 
 def ClickOnItemSize():
     # Removing all of the items from list once detected so that we can readd them again to prevent duplicates
@@ -176,43 +173,42 @@ def ClickOnItemSize():
         print("LARGE SIZE DETECTED")
         detectedOrderedItems.remove(largeSizeDialogue)
 
-def GetAmountOfItems(regionImage):
-    global detectedItemAmounts
-    
-    regionGray = cv.cvtColor(regionImage, cv.COLOR_BGR2GRAY)
-    timestamp = int(time.time())  # Current timestamp as an integer
-    filename = f"saved_image_{timestamp}.png"  # Unique filename using the timestamp
+detectedItemAmount = []
+def GetAmountOfItems(region):
+    for item in itemAmounts:
+        regionGray = cv.cvtColor(region, cv.COLOR_BGR2GRAY)
+        template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
+        template = cv.adaptiveThreshold(template, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
+        regionAdaptiveThresh = cv.adaptiveThreshold(regionGray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
 
-    cv.imwrite(filename, regionGray)  # Save the image
-    for item in itemAmounts:        
-        # Preventing spams of the same item
-        if (item not in detectedItemAmounts):
-            detectedItemAmounts.append(item)
-            print(item.itemName)
-            
-            template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)
-            template = cv.adaptiveThreshold(template, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
-            regionAdaptiveThresh = cv.adaptiveThreshold(regionGray, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
-            resolution = cv.matchTemplate(regionAdaptiveThresh, template, cv.TM_CCOEFF_NORMED)
-            locate = np.where(resolution >= 0.6)
-            points = list(zip(*locate[::-1]))
-        
-            filteredPoints = []
-            for point in points:
-                if all(np.linalg.norm(np.array(point) - np.array(p)) >= 10 for p in filteredPoints):
-                    filteredPoints.append(point)
-                    break  
-        
-            for point in filteredPoints:
+        resolution = cv.matchTemplate(regionAdaptiveThresh, template, cv.TM_CCOEFF_NORMED)
+        locate = np.where(resolution >= 0.8)
+        points = list(zip(*locate[::-1]))
+
+        filteredPoints = []
+        for point in points:
+            if all(np.linalg.norm(np.array(point) - np.array(p)) >= 10 for p in filteredPoints):
+                filteredPoints.append(point)
+
+        h, w = template.shape[:2]  # Get the height and width of the template
+        for point in filteredPoints:
+            top_left = point
+            bottom_right = (top_left[0] + w, top_left[1] + h)
+            cv.rectangle(region, top_left, bottom_right, (0, 255, 0), 2)  # Draw rectangle around the detected item
+
+            if (item not in detectedItemAmount):
                 match item.itemName:
                     case oneItemOrder.itemName:
+                        detectedItemAmount.append(item)
+                        cv.imwrite("oneitem.png", region)  # Save the image with rectangles drawn
                         return 1
                     case twoItemOrder.itemName:
+                        detectedItemAmount.append(item)
+                        cv.imwrite("twoitem.png", region)  # Save the image with rectangles drawn
                         return 2
-                    case _:
-                        return 1
+            
     return 1
-    
+
 def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     centerX = int(point[0] + template.shape[1] // 2 + regionTopLeft[0])
     centerY = int(point[1] + template.shape[0] // 2 + regionTopLeft[1])
@@ -252,7 +248,6 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList, threshold: float = 0
                         match item.itemName:
                             case cheeseOrder.itemName:
                                 burgerCheeseItem.requestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
-                                print("Cheese: ", burgerCheeseItem.requestedAmount)
                             case pattyMeatDialogue.itemName:
                                 burgerPattyMeatItem.requestedAmount = GetAmountOfItems(regionRgb[point[1]:point[1]+h, point[0]:point[0]+w])
                             case pattyVeganDialogue.itemName:

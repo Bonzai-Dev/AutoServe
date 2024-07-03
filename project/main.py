@@ -194,7 +194,6 @@ def ClickOnItemSize():
 
 def GetAmountOfItems(region, item):
     regionAdaptiveThresh = cv.adaptiveThreshold(region, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
-    itemCounts = {}  # Dictionary to hold counts of each item
 
     for amount in itemAmounts:
         template = cv.imread(amount.image, cv.IMREAD_GRAYSCALE)
@@ -209,15 +208,10 @@ def GetAmountOfItems(region, item):
             if all(np.linalg.norm(np.array(point) - np.array(p)) >= 10 for p in filteredPoints):
                 filteredPoints.append(point)
 
-        itemCount = len(filteredPoints)
-        if itemCount > 0:
-            itemCounts[amount.itemName] = itemCount
-
-    # Determine the final count based on accumulated item counts
-    if oneItemOrder.itemName in itemCounts and itemCounts[oneItemOrder.itemName] == 1:
+    if amount.itemName == oneItemOrder.itemName:
         print(item.itemName, "1")
         return 1
-    elif twoItemOrder.itemName in itemCounts and itemCounts[twoItemOrder.itemName] == 2:
+    elif amount.itemName == twoItemOrder.itemName:
         print(item.itemName, "2")
         return 2
 

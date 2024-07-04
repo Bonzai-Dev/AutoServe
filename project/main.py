@@ -82,28 +82,27 @@ menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), 
 
 burgerBunTopItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunTop.png", (0, 255, 0), "Bun menu top", ItemTypes.MENU_ITEM)
 burgerCheeseItem = Item(r"project\img\menuItems\ingredients\burger\CheeseMenu.png", (0, 255, 0), "Cheese menu", ItemTypes.MENU_ITEM)
-burgerPattyVeganItem = Item(r"project\img\menuItems\ingredients\burger\PattyVeganMenu.png", (0, 255, 0), "Vegan menu patty", ItemTypes.MENU_ITEM, detectionThreshold=0.3)
+burgerPattyVeganItem = Item(r"project\img\menuItems\ingredients\burger\PattyVeganMenu.png", (0, 255, 0), "Vegan menu patty", ItemTypes.MENU_ITEM, detectionThreshold=0.2)
 burgerPattyMeatItem = Item(r"project\img\menuItems\ingredients\burger\PattyMeatMenu.png", (0, 255, 0), "Meat menu patty", ItemTypes.MENU_ITEM)
 burgerTomatoeItem = Item(r"project\img\menuItems\ingredients\burger\TomatoeMenu.png", (0, 255, 0), "Tomatoe menu", ItemTypes.MENU_ITEM)
 burgerLettuceItem = Item(r"project\img\menuItems\ingredients\burger\LettuceMenu.png", (0, 255, 0), "Lettuce menu", ItemTypes.MENU_ITEM)
 burgerBunBottomItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunBottom.png", (0, 255, 0), "Bun menu bottom", ItemTypes.MENU_ITEM)
 
 normalFriesItem = Item(r"project\img\menuItems\ingredients\fries\FryNormalMenu.png", (0, 255, 0), "Fry normal menu", ItemTypes.MENU_ITEM)
-mozzarellaSicksItem = Item(r"project\img\menuItems\ingredients\fries\MozzarellaSticksMenu.png", (0, 255, 0), "Mozzarella sticks menu", ItemTypes.MENU_ITEM)
+mozzarellaSicksItem = Item(r"project\img\menuItems\ingredients\fries\MozzarellaSticksMenu.png", (0, 255, 0), "Mozzarella sticks menu", ItemTypes.MENU_ITEM, detectionThreshold=0.62)
 
 normalDrinkItem = Item(r"project\img\menuItems\ingredients\drinks\DrinkNormalMenu.png", (0, 255, 0), "Drink normal menu", ItemTypes.MENU_ITEM)
 
 # Images for dialogue items
 # NOTE: ALL THE DIALOGUE ITEMS NAME MUST END WITH AN "order". EX.: "Cheese order" AND DO NOT ADD ANY ITEMTYPE TO THE SIZES
-cheeseDialogue = Item(r"project\img\dialogueItems\burger\CheeseDialogue.png", (255, 0, 0), "Cheese order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.3)
+cheeseDialogue = Item(r"project\img\dialogueItems\burger\CheeseDialogue.png", (255, 0, 0), "Cheese order", ItemTypes.DIALOGUE_ITEM)
 pattyMeatDialogue = Item(r"project\img\dialogueItems\burger\PattyMeatDialogue.png", (0, 255, 0), "Patty meat order", ItemTypes.DIALOGUE_ITEM)
-pattyVeganDialogue = Item(r"project\img\dialogueItems\burger\PattyVeganDialogue.png", (0, 20, 0), "Patty vegan order", ItemTypes.DIALOGUE_ITEM)
 pattyVeganDialogue = Item(r"project\img\dialogueItems\burger\PattyVeganDialogue.png", (0, 20, 0), "Patty vegan order", ItemTypes.DIALOGUE_ITEM)
 tomatoeDialogue = Item(r"project\img\dialogueItems\burger\TomatoeDialogue.png", (0, 20, 0), "Tomatoe order", ItemTypes.DIALOGUE_ITEM)
 lettuceDialogue = Item(r"project\img\dialogueItems\burger\LettuceDialogue.png", (0, 255, 0), "Lettuce order", ItemTypes.DIALOGUE_ITEM)
  
-mozzarellaSticksOrder = Item(r"project\img\dialogueItems\fries\MozzarellaSticksDialogue.png", (0, 255, 0), "Normal fry order", ItemTypes.DIALOGUE_ITEM)
-normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order", ItemTypes.DIALOGUE_ITEM)
+mozzarellaSticksOrder = Item(r"project\img\dialogueItems\fries\MozzarellaSticksDialogue.png", (0, 255, 0), "Mozzarella sticks order", ItemTypes.DIALOGUE_ITEM)
+normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.62)
 
 normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order", ItemTypes.DIALOGUE_ITEM)
 
@@ -118,7 +117,7 @@ largeSizeMenu = Item(r"project\img\sizes\menu\Large.png", (0, 255, 0), "Lage siz
 
 smallSizeDialogue = Item(r"project\img\sizes\dialogue\Small.png", (0, 255, 0), "Small size dialogue", ItemTypes.DIALOGUE_ITEM)
 mediumSizeDialogue = Item(r"project\img\sizes\dialogue\Medium.png", (0, 255, 0), "Medium size dialogue", ItemTypes.DIALOGUE_ITEM)
-largeSizeDialogue = Item(r"project\img\sizes\dialogue\Large.png", (0, 255, 0), "Large size dialogue", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.75)
+largeSizeDialogue = Item(r"project\img\sizes\dialogue\Large.png", (0, 255, 0), "Large size dialogue", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.8)
 
 # Lists containing all the items for each region. Ex.: the dialogue is one region, so the patty and cheese order is in that list
 menuItems = [
@@ -174,7 +173,7 @@ def ClickOnItem(item : Item):
     positionY = item.positionOnScreen[1]
     print(item.itemName,item.requestedAmount)
     for i in range(item.requestedAmount):
-        autoit.mouse_click("left", positionX, positionY, 1, 2)
+        autoit.mouse_click("left", positionX, positionY, 1, -1)
         time.sleep(0.3)
 
 def ClickOnItemSize():
@@ -192,30 +191,28 @@ def ClickOnItemSize():
         print("LARGE SIZE DETECTED")
         detectedOrderedItems.remove(largeSizeDialogue)
 
-def GetAmountOfItems(region, item):
+lol = 0
+def GetAmountOfItems(region, items):    
+    global lol
+
     regionAdaptiveThresh = cv.adaptiveThreshold(region, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
-
-    for amount in itemAmounts:
-        template = cv.imread(amount.image, cv.IMREAD_GRAYSCALE)
+    for item in itemAmounts:
+        template = cv.imread(item.image, cv.IMREAD_GRAYSCALE)        
         template = cv.adaptiveThreshold(template, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 11, 2)
-
+        
         resolution = cv.matchTemplate(regionAdaptiveThresh, template, cv.TM_CCOEFF_NORMED)
-        locate = np.where(resolution >= 0.6)
+        threshold = item.detectionThreshold
+        locate = np.where(resolution >= threshold)
         points = list(zip(*locate[::-1]))
 
-        filteredPoints = []
-        for point in points:
-            if all(np.linalg.norm(np.array(point) - np.array(p)) >= 10 for p in filteredPoints):
-                filteredPoints.append(point)
-
-    if amount.itemName == oneItemOrder.itemName:
-        print(item.itemName, "1")
-        return 1
-    elif amount.itemName == twoItemOrder.itemName:
-        print(item.itemName, "2")
-        return 2
-
-    return 0
+        if points:
+            if item.itemName == oneItemOrder.itemName:
+                oneItemDetected = True
+                filename = f"{item.itemName}{lol}.png"
+                cv.imwrite(filename, region)
+                lol += 1
+            elif item.itemName == twoItemOrder.itemName:
+                twoItemDetected = True
 
 def GetGlobalItemCenterPosition(point, template, name, regionTopLeft):
     centerX = int(point[0] + template.shape[1] // 2 + regionTopLeft[0])
@@ -261,6 +258,10 @@ def DetectElementInRegion(regionRgb, regionGray, itemsList):
                                 burgerPattyMeatItem.requestedAmount = getAmountOfItems
                             case pattyVeganDialogue.itemName:
                                 burgerPattyVeganItem.requestedAmount = getAmountOfItems
+                            case tomatoeDialogue.itemName:
+                                burgerTomatoeItem.requestedAmount = getAmountOfItems
+                            case lettuceDialogue.itemName:
+                                burgerLettuceItem.requestedAmount = getAmountOfItems
                                             
                     case ItemTypes.MENU_ITEM:
                         if (item not in detectedMenuItems):
@@ -284,12 +285,6 @@ def ProcessOrder():
                 if any(item in detectedOrderedItems for item in [pattyMeatDialogue, pattyVeganDialogue, tomatoeDialogue, lettuceDialogue, cheeseDialogue]):
                     ClickOnItem(burgerBunBottomItem)
                     
-                    if (lettuceDialogue in detectedOrderedItems):
-                        ClickOnItem(burgerLettuceItem)
-                    
-                    if (tomatoeDialogue in detectedOrderedItems):
-                        ClickOnItem(burgerTomatoeItem)
-                    
                     if (pattyMeatDialogue in detectedOrderedItems):
                         ClickOnItem(burgerPattyMeatItem)
                     elif (pattyVeganDialogue in detectedOrderedItems):
@@ -298,16 +293,24 @@ def ProcessOrder():
                     if (cheeseDialogue in detectedOrderedItems):
                         ClickOnItem(burgerCheeseItem)
                     
+                    if (lettuceDialogue in detectedOrderedItems):
+                        ClickOnItem(burgerLettuceItem)
+                    
+                    if (tomatoeDialogue in detectedOrderedItems):
+                        ClickOnItem(burgerTomatoeItem)
+                    
+                    
                     ClickOnItem(burgerBunTopItem)
                     
                     ClickOnItem(friesMenuButton)
                     currentOrderState = OrderState.FRIES
             case OrderState.FRIES:
                 # Check if the fries order is in the detectedOrderedItems list, since theres still orders that we havent unlocked yet
-                if (normalFryOrder in detectedOrderedItems or mozzarellaSticksOrder in detectedOrderedItems):
+                if any(item in detectedOrderedItems for item in [mozzarellaSticksOrder, normalFryOrder]):
                     if (normalFryOrder in detectedOrderedItems):
                         ClickOnItem(normalFriesItem)
-                    elif (mozzarellaSicksItem in detectedOrderedItems):
+                    if (mozzarellaSticksOrder in detectedOrderedItems):
+                        print("Ms detected")
                         ClickOnItem(mozzarellaSicksItem)
 
                     ClickOnItemSize()
@@ -373,6 +376,3 @@ except Exception as e:
     print(f"An error occurred: {e}")
 
 
-'''for item in detectedOrderedItems:
-    print(item)'''
-    

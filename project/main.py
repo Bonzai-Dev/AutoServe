@@ -1,7 +1,7 @@
 #System requirements: CUDA version 12.0 and tesseract OCR downloaded onto the system
 
 #Start date: 6/22/2024
-#Last update: ?/?/2024
+#Last update: 7/5/2024
 
 import cv2 as cv
 import keyboard
@@ -10,14 +10,10 @@ import ctypes
 import time
 import numpy as np
 import pytesseract
-import re
-import ctypes
 import traceback
-import threading
 import autoit
 
 from enum import Enum, auto
-from PIL import Image
 
 # Make the program DPI aware to handle display scaling properly
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -75,7 +71,7 @@ class Item:
         self.detectionThreshold = detectionThreshold
 
 # Images for menu items including buttons
-burgerMenuButton = Item(r"project\img\menuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", ItemTypes.MENU_ITEM)
+burgerMenuButton = Item(r"project\imenuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", ItemTypes.MENU_ITEM)
 friesMenuButton = Item(r"project\img\menuItems\friesMenuButton.png", (100, 0, 255), "Fry menu button", ItemTypes.MENU_ITEM)
 drinkMenuButton = Item(r"project\img\menuItems\DrinkMenuButton.png", (225, 60, 255), "Drink menu button", ItemTypes.MENU_ITEM)
 menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), "Finish menu button", ItemTypes.MENU_ITEM)

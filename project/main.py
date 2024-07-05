@@ -4,6 +4,7 @@
 #Last update: ?/?/2024
 
 import cv2 as cv
+import keyboard
 import pyautogui
 import ctypes
 import time
@@ -389,7 +390,7 @@ try:
         ShowWindow(dialogueRgb, dialogueWindowName, 400)
         ShowWindow(menuRgb, menuWindowName, 400)
                 
-        if cv.waitKey(1) & 0xFF == ord('q'):
+        if (keyboard.is_pressed("q")):
             break
         time.sleep(screenShotRate)
 

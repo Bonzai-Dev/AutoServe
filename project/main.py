@@ -15,7 +15,7 @@ from enum import Enum, auto
 
 # Make the program DPI aware to handle display scaling properly
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
-pytesseract.pytesseract.tesseract_cmd = r"project\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"project\Tesseract-OCR\tesseract.exe" # keep just in case
 
 dialogueRegion = (653, 218, 650, 200) # x, y, width, height
 menuRegion = (1373, 210, 550, 700)

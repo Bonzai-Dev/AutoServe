@@ -100,6 +100,18 @@
   {
    "optionDest": "hiddenimports",
    "value": "enum"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/project/Tesseract-OCR;Tesseract-OCR/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/project/img;img/"
+  },
+  {
+   "optionDest": "datas",
+   "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/venv;venv/"
   }
  ],
  "nonPyinstallerOptions": {

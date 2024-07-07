@@ -1,15 +1,13 @@
-#System requirements: CUDA version 12.0 and tesseract OCR downloaded onto the system
-
 #Start date: 6/22/2024
-#Last update: 7/5/2024
+#Last update: ?/?/2024
 
 import cv2 as cv
-import keyboard
 import pyautogui
 import ctypes
 import time
 import numpy as np
 import pytesseract
+import ctypes
 import traceback
 import autoit
 
@@ -71,7 +69,7 @@ class Item:
         self.detectionThreshold = detectionThreshold
 
 # Images for menu items including buttons
-burgerMenuButton = Item(r"project\imenuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", ItemTypes.MENU_ITEM)
+burgerMenuButton = Item(r"project\img\menuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", ItemTypes.MENU_ITEM)
 friesMenuButton = Item(r"project\img\menuItems\friesMenuButton.png", (100, 0, 255), "Fry menu button", ItemTypes.MENU_ITEM)
 drinkMenuButton = Item(r"project\img\menuItems\DrinkMenuButton.png", (225, 60, 255), "Drink menu button", ItemTypes.MENU_ITEM)
 menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), "Finish menu button", ItemTypes.MENU_ITEM)
@@ -164,26 +162,6 @@ itemAmounts = [
 #endregion
 
 #region Functions
-def SetWindowIcon(windowName, iconPath):
-    # Constants from the Windows API
-    wmSetIcon = 0x0080
-    iconSmall = 0
-    iconBig = 1
-
-    # Load the icon
-    hIconSmall = ctypes.windll.user32.LoadImageW(None, iconPath, 1, 16, 16, 0x00000010)
-    hIconBig = ctypes.windll.user32.LoadImageW(None, iconPath, 1, 32, 32, 0x00000010)
-    if hIconSmall and hIconBig:
-        # Find the window handle
-        hwnd = ctypes.windll.user32.FindWindowW(None, windowName)
-        if hwnd:
-            ctypes.windll.user32.SendMessageW(hwnd, wmSetIcon, iconSmall, hIconSmall)
-            ctypes.windll.user32.SendMessageW(hwnd, wmSetIcon, iconBig, hIconBig)
-        else:
-            print(f"Window '{windowName}' not found!")
-    else:
-        print("Icon could not be loaded!")
-
 def ClickOnItem(item : Item):
     positionX = item.positionOnScreen[0]
     positionY = item.positionOnScreen[1]
@@ -328,6 +306,7 @@ def ProcessOrder():
                     if (normalFryOrder in detectedOrderedItems):
                         ClickOnItem(normalFriesItem)
                     if (mozzarellaSticksOrder in detectedOrderedItems):
+                        print("Ms detected")
                         ClickOnItem(mozzarellaSicksItem)
 
                     ClickOnItemSize()
@@ -369,7 +348,6 @@ def ShowWindow(image, windowName : str, screenWidth : int):
     newh = int(neww*(h/w))
     cv.imshow(windowName, cv.resize(image, (neww, newh)))
     cv.setWindowProperty(windowName, cv.WND_PROP_TOPMOST, 1)  # Set the window property to always on top
-    SetWindowIcon(windowName, r"project\img\AutoServe.ico")
 #endregion
 
 TakeScreenshot()
@@ -386,7 +364,7 @@ try:
         ShowWindow(dialogueRgb, dialogueWindowName, 400)
         ShowWindow(menuRgb, menuWindowName, 400)
                 
-        if (keyboard.is_pressed("q")):
+        if cv.waitKey(1) & 0xFF == ord('q'):
             break
         time.sleep(screenShotRate)
 

@@ -15,7 +15,7 @@
   },
   {
    "optionDest": "console",
-   "value": true
+   "value": false
   },
   {
    "optionDest": "icon_file",
@@ -98,10 +98,6 @@
    "value": "autoit"
   },
   {
-   "optionDest": "hiddenimports",
-   "value": "enum"
-  },
-  {
    "optionDest": "datas",
    "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/project/Tesseract-OCR;Tesseract-OCR/"
   },
@@ -110,8 +106,28 @@
    "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/project/img;img/"
   },
   {
-   "optionDest": "datas",
-   "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/venv;venv/"
+   "optionDest": "hiddenimports",
+   "value": "autoit.init"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "autoit.autoit"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "autoit.control"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "autoit.process"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "autoit.win"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "enum"
   }
  ],
  "nonPyinstallerOptions": {

@@ -6,9 +6,9 @@ settingsJsonPath : str = r"project\settings.json"
 with open (settingsJsonPath, "r") as f:  
     settings : json = json.load(f)
 
+#region UI settings
 font : str = "Helvetica"
 
-# Font sizes
 sizeSmall : int = 10
 sizeMedium : int= 12
 sizeLarge : int = 14
@@ -93,6 +93,7 @@ layout = [
 scrollableLayout = [
     [sg.Column(layout, scrollable=True, vertical_scroll_only=True, element_justification='center', justification='center')]
 ]
+#endregion
 
 # Create the Window
 window = sg.Window(f"AutoServe v{appVersion}", scrollableLayout, finalize=True)

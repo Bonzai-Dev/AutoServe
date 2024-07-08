@@ -10,6 +10,8 @@ import pytesseract
 import ctypes
 import traceback
 import autoit
+import json
+import keyboard
 
 from enum import Enum, auto
 
@@ -17,13 +19,17 @@ from enum import Enum, auto
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
 pytesseract.pytesseract.tesseract_cmd = r"project\Tesseract-OCR\tesseract.exe" # keep just in case
 
-dialogueRegion = (653, 218, 650, 200) # x, y, width, height
-menuRegion = (1373, 210, 550, 700)
+settingsJsonPath : str = r"project\settings.json"
+with open (settingsJsonPath, "r") as f:  
+    settings : json = json.load(f)
+
+dialogueRegion = tuple(map(int, settings["dialogueRegion"].strip("()").split(", ")))
+menuRegion = tuple(map(int, settings["menuRegion"].strip("()").split(", ")))
 
 screenShotRate = 0.8 # in seconds
 dialogueWindowName = "Dialogue AI view"
 menuWindowName = "Menu AI view"
-#windowWidth = 300; # in pixels and will automatically adjust its height
+
 
 dialogue = None
 dialogueRgb = None
@@ -57,7 +63,6 @@ detectedItems = []
 detectedItemAmount = []
 
 #region Classes
-#NOTE IF STARTPOSITION IS SET TO 0,0 IT WILL NOT WORK
 class Item:
     def __init__(self, image : str, outlineColor : tuple[int, int, int], itemName: str, itemType : ItemTypes, positionOnScreen : tuple[int, int] = (0, 0), requestedAmount : int = 1, detectionThreshold : float = 0.6):
         self.image = image # Image path
@@ -69,49 +74,49 @@ class Item:
         self.detectionThreshold = detectionThreshold
 
 # Images for menu items including buttons
-burgerMenuButton = Item(r"project\img\menuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", ItemTypes.MENU_ITEM)
-friesMenuButton = Item(r"project\img\menuItems\friesMenuButton.png", (100, 0, 255), "Fry menu button", ItemTypes.MENU_ITEM)
-drinkMenuButton = Item(r"project\img\menuItems\DrinkMenuButton.png", (225, 60, 255), "Drink menu button", ItemTypes.MENU_ITEM)
-menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), "Finish menu button", ItemTypes.MENU_ITEM)
+burgerMenuButton = Item(r"project\img\menuItems\BurgerMenuButton.png", (0, 225, 255), "Burger menu button", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerMenuButtonDetectionThreshold"])
+friesMenuButton = Item(r"project\img\menuItems\friesMenuButton.png", (100, 0, 255), "Fry menu button", ItemTypes.MENU_ITEM, detectionThreshold=settings["friesMenuButtonDetectionThreshold"])
+drinkMenuButton = Item(r"project\img\menuItems\DrinkMenuButton.png", (225, 60, 255), "Drink menu button", ItemTypes.MENU_ITEM, detectionThreshold=settings["drinkMenuButtonDetectionThreshold"])
+menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), "Finish menu button", ItemTypes.MENU_ITEM, detectionThreshold=settings["menuFinishButtonDetectionThreshold"]    )
 
-burgerBunTopItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunTop.png", (0, 255, 0), "Bun menu top", ItemTypes.MENU_ITEM)
-burgerCheeseItem = Item(r"project\img\menuItems\ingredients\burger\CheeseMenu.png", (0, 255, 0), "Cheese menu", ItemTypes.MENU_ITEM)
-burgerPattyVeganItem = Item(r"project\img\menuItems\ingredients\burger\PattyVeganMenu.png", (0, 255, 0), "Vegan menu patty", ItemTypes.MENU_ITEM, detectionThreshold=0.2)
-burgerPattyMeatItem = Item(r"project\img\menuItems\ingredients\burger\PattyMeatMenu.png", (0, 255, 0), "Meat menu patty", ItemTypes.MENU_ITEM)
-burgerTomatoeItem = Item(r"project\img\menuItems\ingredients\burger\TomatoeMenu.png", (0, 255, 0), "Tomatoe menu", ItemTypes.MENU_ITEM)
-burgerLettuceItem = Item(r"project\img\menuItems\ingredients\burger\LettuceMenu.png", (0, 255, 0), "Lettuce menu", ItemTypes.MENU_ITEM)
-burgerBunBottomItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunBottom.png", (0, 255, 0), "Bun menu bottom", ItemTypes.MENU_ITEM)
+burgerBunTopItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunTop.png", (0, 255, 0), "Bun menu top", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerBunTopItemDetectionThreshold"])
+burgerCheeseItem = Item(r"project\img\menuItems\ingredients\burger\CheeseMenu.png", (0, 255, 0), "Cheese menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerCheeseItemDetectionThreshold"])
+burgerPattyVeganItem = Item(r"project\img\menuItems\ingredients\burger\PattyVeganMenu.png", (0, 255, 0), "Vegan menu patty", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerPattyVeganItemDetectionThreshold"])
+burgerPattyMeatItem = Item(r"project\img\menuItems\ingredients\burger\PattyMeatMenu.png", (0, 255, 0), "Meat menu patty", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerPattyMeatItemDetectionThreshold"])
+burgerTomatoeItem = Item(r"project\img\menuItems\ingredients\burger\TomatoeMenu.png", (0, 255, 0), "Tomatoe menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerTomatoeItemDetectionThreshold"])
+burgerLettuceItem = Item(r"project\img\menuItems\ingredients\burger\LettuceMenu.png", (0, 255, 0), "Lettuce menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerLettuceItemDetectionThreshold"])
+burgerBunBottomItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunBottom.png", (0, 255, 0), "Bun menu bottom", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerBunBottomItemDetectionThreshold"])
 
-normalFriesItem = Item(r"project\img\menuItems\ingredients\fries\FryNormalMenu.png", (0, 255, 0), "Fry normal menu", ItemTypes.MENU_ITEM)
-mozzarellaSicksItem = Item(r"project\img\menuItems\ingredients\fries\MozzarellaSticksMenu.png", (0, 255, 0), "Mozzarella sticks menu", ItemTypes.MENU_ITEM, detectionThreshold=0.62)
+normalFriesItem = Item(r"project\img\menuItems\ingredients\fries\FryNormalMenu.png", (0, 255, 0), "Fry normal menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["normalFriesItemDetectionThreshold"])
+mozzarellaSicksItem = Item(r"project\img\menuItems\ingredients\fries\MozzarellaSticksMenu.png", (0, 255, 0), "Mozzarella sticks menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["mozzarellaSicksItemDetectionThreshold"])
 
-normalDrinkItem = Item(r"project\img\menuItems\ingredients\drinks\DrinkNormalMenu.png", (0, 255, 0), "Drink normal menu", ItemTypes.MENU_ITEM)
+normalDrinkItem = Item(r"project\img\menuItems\ingredients\drinks\DrinkNormalMenu.png", (0, 255, 0), "Drink normal menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["normalDrinkItemDetectionThreshold"])
 
 # Images for dialogue items
 # NOTE: ALL THE DIALOGUE ITEMS NAME MUST END WITH AN "order". EX.: "Cheese order" AND DO NOT ADD ANY ITEMTYPE TO THE SIZES
-cheeseDialogue = Item(r"project\img\dialogueItems\burger\CheeseDialogue.png", (255, 0, 0), "Cheese order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.585)
-pattyMeatDialogue = Item(r"project\img\dialogueItems\burger\PattyMeatDialogue.png", (0, 255, 0), "Patty meat order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.585)
-pattyVeganDialogue = Item(r"project\img\dialogueItems\burger\PattyVeganDialogue.png", (0, 20, 0), "Patty vegan order", ItemTypes.DIALOGUE_ITEM)
-tomatoeDialogue = Item(r"project\img\dialogueItems\burger\TomatoeDialogue.png", (0, 20, 0), "Tomatoe order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.585)
-lettuceDialogue = Item(r"project\img\dialogueItems\burger\LettuceDialogue.png", (0, 255, 0), "Lettuce order", ItemTypes.DIALOGUE_ITEM)
+cheeseDialogue = Item(r"project\img\dialogueItems\burger\CheeseDialogue.png", (255, 0, 0), "Cheese order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["cheeseDialogueDetectionThreshold"])
+pattyMeatDialogue = Item(r"project\img\dialogueItems\burger\PattyMeatDialogue.png", (0, 255, 0), "Patty meat order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["pattyMeatDialogueDetectionThreshold"])
+pattyVeganDialogue = Item(r"project\img\dialogueItems\burger\PattyVeganDialogue.png", (0, 20, 0), "Patty vegan order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["pattyVeganDialogueDetectionThreshold"])
+tomatoeDialogue = Item(r"project\img\dialogueItems\burger\TomatoeDialogue.png", (0, 20, 0), "Tomatoe order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["tomatoeDialogueDetectionThreshold"])
+lettuceDialogue = Item(r"project\img\dialogueItems\burger\LettuceDialogue.png", (0, 255, 0), "Lettuce order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["lettuceDialogueDetectionThreshold"])
  
-mozzarellaSticksOrder = Item(r"project\img\dialogueItems\fries\MozzarellaSticksDialogue.png", (0, 255, 0), "Mozzarella sticks order", ItemTypes.DIALOGUE_ITEM)
-normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.62)
+mozzarellaSticksOrder = Item(r"project\img\dialogueItems\fries\MozzarellaSticksDialogue.png", (0, 255, 0), "Mozzarella sticks order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["mozzarellaSticksOrderDetectionThreshold"])
+normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["normalFryOrderDetectionThreshold"])
 
-normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order", ItemTypes.DIALOGUE_ITEM)
-
-
-oneItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountOne.png", (0, 0, 255), "One item amount", ItemTypes.DIALOGUE_ITEM)
-twoItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountTwo.png", (255, 0, 0), "Two item amount", ItemTypes.DIALOGUE_ITEM)
+normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["normalDrinkOrderDetectionThreshold"])
 
 
-smallSizeMenu = Item(r"project\img\sizes\menu\Small.png", (0, 255, 0), "Small size menu", ItemTypes.MENU_ITEM)
-mediumSizeMenu = Item(r"project\img\sizes\menu\Medium.png", (0, 255, 0), "Medium size menu", ItemTypes.MENU_ITEM)
-largeSizeMenu = Item(r"project\img\sizes\menu\Large.png", (0, 255, 0), "Lage size menu", ItemTypes.MENU_ITEM)
+oneItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountOne.png", (0, 0, 255), "One item amount", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["oneItemOrderDetectionThreshold"])
+twoItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountTwo.png", (255, 0, 0), "Two item amount", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["twoItemOrderDetectionThreshold"])
 
-smallSizeDialogue = Item(r"project\img\sizes\dialogue\Small.png", (0, 255, 0), "Small size dialogue", ItemTypes.DIALOGUE_ITEM)
-mediumSizeDialogue = Item(r"project\img\sizes\dialogue\Medium.png", (0, 255, 0), "Medium size dialogue", ItemTypes.DIALOGUE_ITEM)
-largeSizeDialogue = Item(r"project\img\sizes\dialogue\Large.png", (0, 255, 0), "Large size dialogue", ItemTypes.DIALOGUE_ITEM, detectionThreshold=0.8)
+
+smallSizeMenu = Item(r"project\img\sizes\menu\Small.png", (0, 255, 0), "Small size menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["smallSizeMenuDetectionThreshold"])
+mediumSizeMenu = Item(r"project\img\sizes\menu\Medium.png", (0, 255, 0), "Medium size menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["mediumSizeMenuDetectionThreshold"])
+largeSizeMenu = Item(r"project\img\sizes\menu\Large.png", (0, 255, 0), "Lage size menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["largeSizeMenuDetectionThreshold"])
+
+smallSizeDialogue = Item(r"project\img\sizes\dialogue\Small.png", (0, 255, 0), "Small size dialogue", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["smallSizeDialogueDetectionThreshold"])
+mediumSizeDialogue = Item(r"project\img\sizes\dialogue\Medium.png", (0, 255, 0), "Medium size dialogue", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["mediumSizeDialogueDetectionThreshold"])
+largeSizeDialogue = Item(r"project\img\sizes\dialogue\Large.png", (0, 255, 0), "Large size dialogue", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["largeSizeDialogueDetectionThreshold"])
 
 # Lists containing all the items for each region. Ex.: the dialogue is one region, so the patty and cheese order is in that list
 menuItems = [
@@ -353,19 +358,20 @@ def ShowWindow(image, windowName : str, screenWidth : int):
 TakeScreenshot()
 try:
     while True:
+        if cv.waitKey(1) & 0xFF == ord('q') or keyboard.is_pressed("q"):
+            cv.destroyAllWindows()
+            break
+        
         TakeScreenshot()
         
         DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems)
         DetectElementInRegion(menuRgb, menuGray, menuItems)
 
-        ProcessOrder()
+        if (settings["aiViewEnabled"]):
+            ShowWindow(dialogueRgb, dialogueWindowName, 400)
+            ShowWindow(menuRgb, menuWindowName, 400)
 
-        # Add these functions in the detect element in region
-        ShowWindow(dialogueRgb, dialogueWindowName, 400)
-        ShowWindow(menuRgb, menuWindowName, 400)
-                
-        if cv.waitKey(1) & 0xFF == ord('q'):
-            break
+        ProcessOrder()
         time.sleep(screenShotRate)
 
 except Exception as e:

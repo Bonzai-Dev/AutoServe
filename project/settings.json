@@ -1,7 +1,7 @@
 {
     "dialogueRegion": "(653, 218, 650, 200)",
-    "menuRegion": "(2273, 210, 550, 700)",
-    "aiViewEnabled": false,
+    "menuRegion": "(1373, 210, 550, 700)",
+    "aiViewEnabled": true,
     "burgerMenuButtonDetectionThreshold": 0.6,
     "friesMenuButtonDetectionThreshold": 0.6,
     "drinkMenuButtonDetectionThreshold": 0.6,

@@ -108,9 +108,7 @@ while True:
     if event == sg.WIN_CLOSED:
         break
 
-    if event == "Run Bot":  
-        main.Main()
-        
+    if event == "Run Bot":          
         allValuesValid = True
         for key in values:
             if key == "dialogueRegion" or key == "menuRegion":
@@ -130,5 +128,6 @@ while True:
         if allValuesValid: 
             with open(settingsJsonPath, "w") as f:
                 json.dump(values, f, indent=4)
+            main.Main()
         
 window.close()

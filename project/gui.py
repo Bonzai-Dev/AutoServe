@@ -2,6 +2,8 @@ import FreeSimpleGUI as sg
 import json
 import re
 
+import main
+
 settingsJsonPath : str = r"project\settings.json"
 with open (settingsJsonPath, "r") as f:  
     settings : json = json.load(f)
@@ -105,6 +107,8 @@ while True:
         break
 
     if event == "Run Bot":  
+        main.Main()
+        
         allValuesValid = True
         for key in values:
             if key == "dialogueRegion" or key == "menuRegion":

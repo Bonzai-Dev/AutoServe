@@ -212,7 +212,7 @@ def GetAmountOfItems(region):
                     
         return 1
     
-    except:
+    except Exception as e:
         tb = traceback.format_exc()
         print(f"An error occurred in GetAmountOfItems function: {e}\nTraceback: {tb}")
         
@@ -353,28 +353,29 @@ def ShowWindow(image, windowName : str, screenWidth : int):
     newh = int(neww*(h/w))
     cv.imshow(windowName, cv.resize(image, (neww, newh)))
     cv.setWindowProperty(windowName, cv.WND_PROP_TOPMOST, 1)  # Set the window property to always on top
+
+def Main():
+    TakeScreenshot()
+    try:
+        while True:
+            if keyboard.is_pressed("q"):
+                cv.destroyAllWindows()
+                break
+        
+            cv.waitKey(1)
+        
+            TakeScreenshot()
+            
+            DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems)
+            DetectElementInRegion(menuRgb, menuGray, menuItems)
+
+            if (settings["aiViewEnabled"]):
+                ShowWindow(dialogueRgb, dialogueWindowName, 400)
+                ShowWindow(menuRgb, menuWindowName, 400)
+
+            ProcessOrder()
+            time.sleep(screenShotRate)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
 #endregion
-
-TakeScreenshot()
-try:
-    while True:
-        if cv.waitKey(1) & 0xFF == ord('q') or keyboard.is_pressed("q"):
-            cv.destroyAllWindows()
-            break
-        
-        TakeScreenshot()
-        
-        DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems)
-        DetectElementInRegion(menuRgb, menuGray, menuItems)
-
-        if (settings["aiViewEnabled"]):
-            ShowWindow(dialogueRgb, dialogueWindowName, 400)
-            ShowWindow(menuRgb, menuWindowName, 400)
-
-        ProcessOrder()
-        time.sleep(screenShotRate)
-
-except Exception as e:
-    print(f"An error occurred: {e}")
-
-

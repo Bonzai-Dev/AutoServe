@@ -98,7 +98,7 @@ scrollableLayout = [
 #endregion
 
 # Create the Window
-window = sg.Window(f"AutoServe v{appVersion}", scrollableLayout, finalize=True)
+window = sg.Window(f"AutoServe v{appVersion}", scrollableLayout, icon=r"project\img\icons\AutoServe.ico", finalize=True)
 
 while True:
     event, values = window.read()

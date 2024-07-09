@@ -7,7 +7,7 @@
   },
   {
    "optionDest": "filenames",
-   "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/project/main.py"
+   "value": "C:/Users/2690360/Downloads/AutoServe/project/gui.py"
   },
   {
    "optionDest": "onefile",
@@ -19,7 +19,7 @@
   },
   {
    "optionDest": "icon_file",
-   "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/project/img/AutoServe.ico"
+   "value": "C:/Users/2690360/Downloads/AutoServe/project/img/icons/AutoServe.ico"
   },
   {
    "optionDest": "name",
@@ -28,10 +28,6 @@
   {
    "optionDest": "clean_build",
    "value": false
-  },
-  {
-   "optionDest": "debug",
-   "value": "all"
   },
   {
    "optionDest": "strip",
@@ -67,10 +63,6 @@
   },
   {
    "optionDest": "hiddenimports",
-   "value": "keyboard"
-  },
-  {
-   "optionDest": "hiddenimports",
    "value": "pyautogui"
   },
   {
@@ -98,36 +90,32 @@
    "value": "autoit"
   },
   {
+   "optionDest": "hiddenimports",
+   "value": "json"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "keyboard"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "FreeSimpleGUI"
+  },
+  {
+   "optionDest": "hiddenimports",
+   "value": "re"
+  },
+  {
    "optionDest": "datas",
-   "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/project/Tesseract-OCR;Tesseract-OCR/"
+   "value": "C:/Users/2690360/Downloads/AutoServe/project/img;img/"
   },
   {
    "optionDest": "datas",
-   "value": "C:/Users/2690360/Downloads/BloxburgCashFarm/project/img;img/"
+   "value": "C:/Users/2690360/Downloads/AutoServe/project/settings.json;."
   },
   {
    "optionDest": "hiddenimports",
-   "value": "autoit.init"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "autoit.autoit"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "autoit.control"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "autoit.process"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "autoit.win"
-  },
-  {
-   "optionDest": "hiddenimports",
-   "value": "enum"
+   "value": "main"
   }
  ],
  "nonPyinstallerOptions": {

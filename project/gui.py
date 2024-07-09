@@ -4,7 +4,7 @@ import re
 
 import main
 
-settingsJsonPath : str = r"project\settings.json"
+settingsJsonPath : str = r"settings.json"
 with open (settingsJsonPath, "r") as f:  
     settings : json = json.load(f)
 
@@ -98,7 +98,7 @@ scrollableLayout = [
 #endregion
 
 # Create the Window
-window = sg.Window(f"AutoServe v{appVersion}", scrollableLayout, icon=r"project\img\icons\AutoServe.ico", finalize=True)
+window = sg.Window(f"AutoServe v{appVersion}", scrollableLayout, icon=r"img\icons\AutoServe.ico")
 
 while True:
     event, values = window.read()

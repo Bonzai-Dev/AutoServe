@@ -6,19 +6,19 @@ import pyautogui
 import ctypes
 import time
 import numpy as np
-import pytesseract
 import traceback
 import autoit
 import json
 import keyboard
+import threading
 
 from enum import Enum, auto
 
 # Make the program DPI aware to handle display scaling properly
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
-pytesseract.pytesseract.tesseract_cmd = r"Tesseract-OCR\tesseract.exe" # keep just in case
+#pytesseract.pytesseract.tesseract_cmd = r"Tesseract-OCR\tesseract.exe" # keep just in case
 
-settingsJsonPath : str = r"project\settings.json"
+settingsJsonPath : str = r"settings.json"
 with open (settingsJsonPath, "r") as f:  
     settings : json = json.load(f)
 
@@ -28,7 +28,6 @@ menuRegion = tuple(map(int, settings["menuRegion"].strip("()").split(", ")))
 screenShotRate = 0.8 # in seconds
 dialogueWindowName = "Dialogue AI view"
 menuWindowName = "Menu AI view"
-
 
 dialogue = None
 dialogueRgb = None
@@ -353,14 +352,25 @@ def ShowWindow(image, windowName : str, screenWidth : int):
     cv.imshow(windowName, cv.resize(image, (neww, newh)))
     cv.setWindowProperty(windowName, cv.WND_PROP_TOPMOST, 1)  # Set the window property to always on top
 
+isRunning = True
+
+def keyInputDetection():
+    global isRunning
+    while isRunning:
+        if keyboard.is_pressed("q"):
+            isRunning = False
+            break
+        
+        time.sleep(0.1)
+
+
 def Main():
     TakeScreenshot()
+    keyThread = threading.Thread(target=keyInputDetection)
+    keyThread.start()
+
     try:
-        while True:
-            if keyboard.is_pressed("q"):
-                cv.destroyAllWindows()
-                break
-        
+        while isRunning:
             cv.waitKey(1)
         
             TakeScreenshot()
@@ -375,6 +385,8 @@ def Main():
             ProcessOrder()
             time.sleep(screenShotRate)
 
+        cv.destroyAllWindows()
+        
     except Exception as e:
         print(f"An error occurred: {e}")
 #endregion

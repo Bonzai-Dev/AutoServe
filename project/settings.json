@@ -16,7 +16,7 @@
     "normalFriesItemDetectionThreshold": 0.6,
     "mozzarellaSicksItemDetectionThreshold": 0.62,
     "normalDrinkItemDetectionThreshold": 0.6,
-    "cheeseDialogueDetectionThreshold": 0.585,
+    "cheeseDialogueDetectionThreshold": 0.5,
     "pattyMeatDialogueDetectionThreshold": 0.585,
     "pattyVeganDialogueDetectionThreshold": 0.585,
     "tomatoeDialogueDetectionThreshold": 0.6,

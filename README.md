@@ -16,7 +16,7 @@
 
 - Let the bot run!
 
-- Once you've got the cash, just press "q" on your keyboard and stop the bot. Simple!
+- Once you've got the cash, just spam "q" on your keyboard and stop the bot. Simple!
 
 ## NOTE:
 - For those who believe this is cheating, it is not. This process only automates a task. Additionally, you will still need to manually refill your stats when they decrease and will also make the same amount of money as a human.

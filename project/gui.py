@@ -1,10 +1,11 @@
 import FreeSimpleGUI as sg
 import json
 import re
+import threading
 
 import main
 
-settingsJsonPath : str = r"settings.json"
+settingsJsonPath : str = r"project\settings.json"
 with open (settingsJsonPath, "r") as f:  
     settings : json = json.load(f)
 
@@ -98,8 +99,8 @@ scrollableLayout = [
 #endregion
 
 # Create the Window
-sg.set_global_icon(r"img\icons\AutoServe.ico")
-window = sg.Window(f"AutoServe v{appVersion}", scrollableLayout, icon=r"img\icons\AutoServe.ico")
+sg.set_global_icon(r"project\img\icons\AutoServe.ico")
+window = sg.Window(f"AutoServe v{appVersion}", scrollableLayout, icon=r"project\img\icons\AutoServe.ico")
 
 while True:
     event, values = window.read()

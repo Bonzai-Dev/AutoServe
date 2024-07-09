@@ -5,7 +5,7 @@
 - AutoServe uses an open-source Python library called OpenCV for image detection. It detects items on the screen and NPC orders to automate the tasks and determine where to click.
 
 ## How do I use it?
-- Obtain the executable or build from source.
+- Obtain the executable from the lates version of the program or build from source.
 - Modify the settings if needed. You can also retake the screenshots if the bot isint detecting all the items.
 - Load into the game and start your shift.
 

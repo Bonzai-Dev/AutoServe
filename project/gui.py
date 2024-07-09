@@ -98,6 +98,7 @@ scrollableLayout = [
 #endregion
 
 # Create the Window
+sg.set_global_icon(r"img\icons\AutoServe.ico")
 window = sg.Window(f"AutoServe v{appVersion}", scrollableLayout, icon=r"img\icons\AutoServe.ico")
 
 while True:

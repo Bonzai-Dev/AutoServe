@@ -10,7 +10,6 @@ import traceback
 import autoit
 import json
 import keyboard
-import threading
 
 from enum import Enum, auto
 
@@ -92,6 +91,7 @@ onionRingsItem = Item(r"project\img\menuItems\ingredients\fries\OnionRingsMenu.p
 
 normalDrinkItem = Item(r"project\img\menuItems\ingredients\drinks\DrinkNormalMenu.png", (0, 255, 0), "Drink normal menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["normalDrinkItemDetectionThreshold"])
 juiceDrinkItem = Item(r"project\img\menuItems\ingredients\drinks\DrinkJuiceMenu.png", (0, 255, 0), "Drink juice menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["juiceDrinkItemDetectionThreshold"])
+milkshakeDrinkItem = Item(r"project\img\menuItems\ingredients\drinks\DrinkMilkshakeMenu.png", (0, 255, 0), "Drink milkshake menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["milkshakeDrinkItemDetectionThreshold"])
 
 # Images for dialogue items
 # NOTE: ALL THE DIALOGUE ITEMS NAME MUST END WITH AN "order". EX.: "Cheese order" AND DO NOT ADD ANY ITEMTYPE TO THE SIZES
@@ -108,6 +108,7 @@ onionRingsOrder = Item(r"project\img\dialogueItems\fries\OnionRingsDialogue.png"
 
 normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["normalDrinkOrderDetectionThreshold"])
 juiceDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkJuiceDialogue.png", (0, 255, 0), "Juice drink order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["juiceDrinkOrderDetectionThreshold"])
+milkshakeDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkMilkshakeDialogue.png", (0, 255, 0), "Milkshake drink order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["milkshakeDrinkOrderDetectionThreshold"])
 
 
 oneItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountOne.png", (0, 0, 255), "One item amount", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["oneItemOrderDetectionThreshold"])
@@ -148,6 +149,7 @@ menuItems = [
     
     normalDrinkItem,
     juiceDrinkItem,
+    milkshakeDrinkItem
 ]
 
 dialogueItems = [
@@ -167,7 +169,8 @@ dialogueItems = [
     onionRingsOrder,
     
     normalDrinkOrder,
-    juiceDrinkOrder
+    juiceDrinkOrder,
+    milkshakeDrinkOrder
 ]
 
 itemAmounts = [
@@ -183,7 +186,7 @@ def ClickOnItem(item : Item):
     print(item.itemName,item.requestedAmount)
     for i in range(item.requestedAmount):
         autoit.mouse_click("left", positionX, positionY, 1, 2)
-        time.sleep(0.3)
+        time.sleep(0.25)
 
 def ClickOnItemSize():
     # Removing all of the items from list once detected so that we can readd them again to prevent duplicates
@@ -332,12 +335,14 @@ def ProcessOrder():
                     ClickOnItem(drinkMenuButton)
                     currentOrderState = OrderState.DRINK
             case OrderState.DRINK:
-                if any(item in detectedOrderedItems for item in [normalDrinkOrder, juiceDrinkOrder]):
+                if any(item in detectedOrderedItems for item in [normalDrinkOrder, juiceDrinkOrder, milkshakeDrinkOrder]):
                     if (normalDrinkOrder in detectedOrderedItems):
                         ClickOnItem(normalDrinkItem)
                     if (juiceDrinkOrder in detectedOrderedItems):
                         ClickOnItem(juiceDrinkItem)
-
+                    if (milkshakeDrinkOrder in detectedOrderedItems):
+                        ClickOnItem(milkshakeDrinkItem)
+                    
                     ClickOnItemSize()
                     
                 ClickOnItem(menuFinishButton)
@@ -384,6 +389,8 @@ def Main():
             
             cv.waitKey(1)
         
+            TakeScreenshot()
+        
             DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems)
             DetectElementInRegion(menuRgb, menuGray, menuItems)
 
@@ -400,3 +407,4 @@ def Main():
     except Exception as e:
         print(f"An error occurred: {e}")
 #endregion
+Main()

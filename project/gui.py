@@ -19,7 +19,7 @@ sizeXLarge : int = 18
 regionInputSize : tuple[int, int] = (20, 1) # Width, height
 numberInputSize : tuple[int, int] = (7, 1) # Width, height
 
-appVersion = 1.0
+appVersion = 1.1
 sg.theme('Dark Grey 2')
 
 layout = [  
@@ -32,7 +32,7 @@ layout = [
         [sg.Text(" ", size=(1, 1))],
         
         [sg.Text("Screenshot rate", font=(font, sizeSmall)), sg.InputText(key="screenshotRate", default_text=settings["screenshotRate"], size=numberInputSize)],
-        [sg.Text("AI View enabled", font=(font, sizeSmall)), sg.Checkbox("", key="aiViewEnabled", default=settings["aiViewEnabled"])]
+        #[sg.Text("AI View enabled", font=(font, sizeSmall)), sg.Checkbox("", key="aiViewEnabled", default=settings["aiViewEnabled"])]
     ], font=(font, sizeLarge)), sg.Push()],
     
     [sg.Text(" ", size=(1, 1))],
@@ -59,6 +59,7 @@ layout = [
         
         [sg.Text("Drink normal menu", font=(font, sizeSmall)), sg.InputText(key="normalDrinkItemDetectionThreshold", default_text=settings["normalDrinkItemDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Juice drink menu", font=(font, sizeSmall)), sg.InputText(key="juiceDrinkItemDetectionThreshold", default_text=settings["juiceDrinkItemDetectionThreshold"], size=numberInputSize)],
+        [sg.Text("Milkshake drink menu", font=(font, sizeSmall)), sg.InputText(key="milkshakeDrinkItemDetectionThreshold", default_text=settings["milkshakeDrinkItemDetectionThreshold"], size=numberInputSize)],
         
         [sg.Text(" ", size=(1, 1))],  # Adding a bit of vertical space
         
@@ -78,6 +79,7 @@ layout = [
       
         [sg.Text("Normal drink order", font=(font, sizeSmall)), sg.InputText(key="normalDrinkOrderDetectionThreshold", default_text=settings["normalDrinkOrderDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Juice drink order", font=(font, sizeSmall)), sg.InputText(key="juiceDrinkOrderDetectionThreshold", default_text=settings["juiceDrinkOrderDetectionThreshold"], size=numberInputSize)],
+        [sg.Text("Milkshake drink order", font=(font, sizeSmall)), sg.InputText(key="milkshakeDrinkOrderDetectionThreshold", default_text=settings["milkshakeDrinkOrderDetectionThreshold"], size=numberInputSize)],
         
         [sg.Text(" ", size=(1, 1))],  
 

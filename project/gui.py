@@ -1,7 +1,6 @@
 import FreeSimpleGUI as sg
 import json
 import re
-import threading
 
 import main
 
@@ -32,7 +31,8 @@ layout = [
         
         [sg.Text(" ", size=(1, 1))],
         
-        [sg.Text("AI View Enabled", font=(font, sizeSmall)), sg.Checkbox("", key="aiViewEnabled", default=settings["aiViewEnabled"])]
+        [sg.Text("Screenshot rate", font=(font, sizeSmall)), sg.InputText(key="screenshotRate", default_text=settings["screenshotRate"], size=numberInputSize)],
+        [sg.Text("AI View enabled", font=(font, sizeSmall)), sg.Checkbox("", key="aiViewEnabled", default=settings["aiViewEnabled"])]
     ], font=(font, sizeLarge)), sg.Push()],
     
     [sg.Text(" ", size=(1, 1))],
@@ -45,6 +45,7 @@ layout = [
         [sg.Text("Finish menu button", font=(font, sizeSmall)), sg.InputText(key="menuFinishButtonDetectionThreshold", default_text=settings["menuFinishButtonDetectionThreshold"], size=numberInputSize)],
        
         [sg.Text("Bun menu top", font=(font, sizeSmall)), sg.InputText(key="burgerBunTopItemDetectionThreshold", default_text=settings["burgerBunTopItemDetectionThreshold"], size=numberInputSize)],
+        [sg.Text("Onion menu", font=(font, sizeSmall)), sg.InputText(key="burgerOnionItemDetectionThreshold", default_text=settings["burgerOnionItemDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Cheese menu", font=(font, sizeSmall)), sg.InputText(key="burgerCheeseItemDetectionThreshold", default_text=settings["burgerCheeseItemDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Vegan menu patty", font=(font, sizeSmall)), sg.InputText(key="burgerPattyVeganItemDetectionThreshold", default_text=settings["burgerPattyVeganItemDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Meat menu patty", font=(font, sizeSmall)), sg.InputText(key="burgerPattyMeatItemDetectionThreshold", default_text=settings["burgerPattyMeatItemDetectionThreshold"], size=numberInputSize)],
@@ -54,33 +55,44 @@ layout = [
        
         [sg.Text("Fry normal menu", font=(font, sizeSmall)), sg.InputText(key="normalFriesItemDetectionThreshold", default_text=settings["normalFriesItemDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Mozzarella sticks menu", font=(font, sizeSmall)), sg.InputText(key="mozzarellaSicksItemDetectionThreshold", default_text=settings["mozzarellaSicksItemDetectionThreshold"], size=numberInputSize)],
+        [sg.Text("Onion rings menu", font=(font, sizeSmall)), sg.InputText(key="onionRingsItemDetectionThreshold", default_text=settings["onionRingsItemDetectionThreshold"], size=numberInputSize)],
         
         [sg.Text("Drink normal menu", font=(font, sizeSmall)), sg.InputText(key="normalDrinkItemDetectionThreshold", default_text=settings["normalDrinkItemDetectionThreshold"], size=numberInputSize)],
+        [sg.Text("Juice drink menu", font=(font, sizeSmall)), sg.InputText(key="juiceDrinkItemDetectionThreshold", default_text=settings["juiceDrinkItemDetectionThreshold"], size=numberInputSize)],
         
         [sg.Text(" ", size=(1, 1))],  # Adding a bit of vertical space
         
         [sg.Push(), sg.Text("Dialogue Items", font=(font, sizeMedium, "bold")), sg.Push()],
+        [sg.Text("Onion order", font=(font, sizeSmall)), sg.InputText(key="onionDialogueDetectionThreshold", default_text=settings["onionDialogueDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Cheese order", font=(font, sizeSmall)), sg.InputText(key="cheeseDialogueDetectionThreshold", default_text=settings["cheeseDialogueDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Patty meat order", font=(font, sizeSmall)), sg.InputText(key="pattyMeatDialogueDetectionThreshold", default_text=settings["pattyMeatDialogueDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Patty vegan order", font=(font, sizeSmall)), sg.InputText(key="pattyVeganDialogueDetectionThreshold", default_text=settings["pattyVeganDialogueDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Tomatoe order", font=(font, sizeSmall)), sg.InputText(key="tomatoeDialogueDetectionThreshold", default_text=settings["tomatoeDialogueDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Lettuce order", font=(font, sizeSmall)), sg.InputText(key="lettuceDialogueDetectionThreshold", default_text=settings["lettuceDialogueDetectionThreshold"], size=numberInputSize)],
+        
+        [sg.Text(" ", size=(1, 1))],  
+        
         [sg.Text("Mozzarella sticks order", font=(font, sizeSmall)), sg.InputText(key="mozzarellaSticksOrderDetectionThreshold", default_text=settings["mozzarellaSticksOrderDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Normal fry order", font=(font, sizeSmall)), sg.InputText(key="normalFryOrderDetectionThreshold", default_text=settings["normalFryOrderDetectionThreshold"], size=numberInputSize)],
+        [sg.Text("Onion rings order", font=(font, sizeSmall)), sg.InputText(key="onionRingsOrderDetectionThreshold", default_text=settings["onionRingsOrderDetectionThreshold"], size=numberInputSize)],
+      
         [sg.Text("Normal drink order", font=(font, sizeSmall)), sg.InputText(key="normalDrinkOrderDetectionThreshold", default_text=settings["normalDrinkOrderDetectionThreshold"], size=numberInputSize)],
+        [sg.Text("Juice drink order", font=(font, sizeSmall)), sg.InputText(key="juiceDrinkOrderDetectionThreshold", default_text=settings["juiceDrinkOrderDetectionThreshold"], size=numberInputSize)],
         
-        [sg.Text(" ", size=(1, 1))],  # Adding a bit of vertical space
+        [sg.Text(" ", size=(1, 1))],  
 
         [sg.Push(), sg.Text("Items Amount", font=(font, sizeMedium, "bold")), sg.Push()],
         [sg.Text("One item amount", font=(font, sizeSmall)), sg.InputText(key="oneItemOrderDetectionThreshold", default_text=settings["oneItemOrderDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Two item amount", font=(font, sizeSmall)), sg.InputText(key="twoItemOrderDetectionThreshold", default_text=settings["twoItemOrderDetectionThreshold"], size=numberInputSize)],
         
-        [sg.Text(" ", size=(1, 1))],  # Adding a bit of vertical space
+        [sg.Text(" ", size=(1, 1))],  
         
         [sg.Push(), sg.Text("Items Size", font=(font, sizeMedium, "bold")), sg.Push()],
         [sg.Text("Small size menu", font=(font, sizeSmall)), sg.InputText(key="smallSizeMenuDetectionThreshold", default_text=settings["smallSizeMenuDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Medium size menu", font=(font, sizeSmall)), sg.InputText(key="mediumSizeMenuDetectionThreshold", default_text=settings["mediumSizeMenuDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Lage size menu", font=(font, sizeSmall)), sg.InputText(key="largeSizeMenuDetectionThreshold", default_text=settings["largeSizeMenuDetectionThreshold"], size=numberInputSize)],
+        
+        [sg.Text(" ", size=(1, 1))],  
         
         [sg.Text("Small size dialogue", font=(font, sizeSmall)), sg.InputText(key="smallSizeDialogueDetectionThreshold", default_text=settings["smallSizeDialogueDetectionThreshold"], size=numberInputSize)],
         [sg.Text("Medium size dialogue", font=(font, sizeSmall)), sg.InputText(key="mediumSizeDialogueDetectionThreshold", default_text=settings["mediumSizeDialogueDetectionThreshold"], size=numberInputSize)],

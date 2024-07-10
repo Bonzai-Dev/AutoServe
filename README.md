@@ -11,8 +11,7 @@
 
 - Run the program and wait for it to load.
 
-- Once it has finished loading, close or tab out of the control panel and go to this specific cash register for the best performance of the bot.
-![Cash register location](CashRegisterImage.png)
+- Once it has finished loading, close or tab out of the control panel. MAKE SURE TO TIME IT RIGHT. THE SCREENSHOTRATE COUNTDOWN HAS TO START WHEN YOU INTERACT WITH THE CASH REGISTER.
 
 - Let the bot run!
 

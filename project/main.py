@@ -25,7 +25,7 @@ with open (settingsJsonPath, "r") as f:
 dialogueRegion = tuple(map(int, settings["dialogueRegion"].strip("()").split(", ")))
 menuRegion = tuple(map(int, settings["menuRegion"].strip("()").split(", ")))
 
-screenShotRate = 0.8 # in seconds
+screenshotRate = settings["screenshotRate"] # in seconds
 dialogueWindowName = "Dialogue AI view"
 menuWindowName = "Menu AI view"
 
@@ -78,6 +78,7 @@ drinkMenuButton = Item(r"project\img\menuItems\DrinkMenuButton.png", (225, 60, 2
 menuFinishButton = Item(r"project\img\menuItems\FinishButton.png", (0, 0, 255), "Finish menu button", ItemTypes.MENU_ITEM, detectionThreshold=settings["menuFinishButtonDetectionThreshold"]    )
 
 burgerBunTopItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenuBunTop.png", (0, 255, 0), "Bun menu top", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerBunTopItemDetectionThreshold"])
+burgerOnionItem = Item(r"project\img\menuItems\ingredients\burger\OnionMenu.png", (0, 255, 0), "Onion menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerOnionItemDetectionThreshold"])
 burgerCheeseItem = Item(r"project\img\menuItems\ingredients\burger\CheeseMenu.png", (0, 255, 0), "Cheese menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerCheeseItemDetectionThreshold"])
 burgerPattyVeganItem = Item(r"project\img\menuItems\ingredients\burger\PattyVeganMenu.png", (0, 255, 0), "Vegan menu patty", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerPattyVeganItemDetectionThreshold"])
 burgerPattyMeatItem = Item(r"project\img\menuItems\ingredients\burger\PattyMeatMenu.png", (0, 255, 0), "Meat menu patty", ItemTypes.MENU_ITEM, detectionThreshold=settings["burgerPattyMeatItemDetectionThreshold"])
@@ -87,12 +88,15 @@ burgerBunBottomItem = Item(r"project\img\menuItems\ingredients\burger\BurgerMenu
 
 normalFriesItem = Item(r"project\img\menuItems\ingredients\fries\FryNormalMenu.png", (0, 255, 0), "Fry normal menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["normalFriesItemDetectionThreshold"])
 mozzarellaSicksItem = Item(r"project\img\menuItems\ingredients\fries\MozzarellaSticksMenu.png", (0, 255, 0), "Mozzarella sticks menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["mozzarellaSicksItemDetectionThreshold"])
+onionRingsItem = Item(r"project\img\menuItems\ingredients\fries\OnionRingsMenu.png", (0, 255, 0), "Onion rings menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["onionRingsItemDetectionThreshold"])
 
 normalDrinkItem = Item(r"project\img\menuItems\ingredients\drinks\DrinkNormalMenu.png", (0, 255, 0), "Drink normal menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["normalDrinkItemDetectionThreshold"])
+juiceDrinkItem = Item(r"project\img\menuItems\ingredients\drinks\DrinkJuiceMenu.png", (0, 255, 0), "Drink juice menu", ItemTypes.MENU_ITEM, detectionThreshold=settings["juiceDrinkItemDetectionThreshold"])
 
 # Images for dialogue items
 # NOTE: ALL THE DIALOGUE ITEMS NAME MUST END WITH AN "order". EX.: "Cheese order" AND DO NOT ADD ANY ITEMTYPE TO THE SIZES
 cheeseDialogue = Item(r"project\img\dialogueItems\burger\CheeseDialogue.png", (255, 0, 0), "Cheese order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["cheeseDialogueDetectionThreshold"])
+onionDialogue = Item(r"project\img\dialogueItems\burger\OnionDialogue.png", (0, 255, 0), "Onion order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["onionDialogueDetectionThreshold"])
 pattyMeatDialogue = Item(r"project\img\dialogueItems\burger\PattyMeatDialogue.png", (0, 255, 0), "Patty meat order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["pattyMeatDialogueDetectionThreshold"])
 pattyVeganDialogue = Item(r"project\img\dialogueItems\burger\PattyVeganDialogue.png", (0, 20, 0), "Patty vegan order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["pattyVeganDialogueDetectionThreshold"])
 tomatoeDialogue = Item(r"project\img\dialogueItems\burger\TomatoeDialogue.png", (0, 20, 0), "Tomatoe order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["tomatoeDialogueDetectionThreshold"])
@@ -100,8 +104,10 @@ lettuceDialogue = Item(r"project\img\dialogueItems\burger\LettuceDialogue.png", 
  
 mozzarellaSticksOrder = Item(r"project\img\dialogueItems\fries\MozzarellaSticksDialogue.png", (0, 255, 0), "Mozzarella sticks order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["mozzarellaSticksOrderDetectionThreshold"])
 normalFryOrder = Item(r"project\img\dialogueItems\fries\FryNormalDialogue.png", (0, 255, 0), "Normal fry order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["normalFryOrderDetectionThreshold"])
+onionRingsOrder = Item(r"project\img\dialogueItems\fries\OnionRingsDialogue.png", (0, 255, 0), "Onion rings order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["onionRingsOrderDetectionThreshold"])
 
 normalDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkNormalDialogue.png", (0, 255, 0), "Normal drink order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["normalDrinkOrderDetectionThreshold"])
+juiceDrinkOrder = Item(r"project\img\dialogueItems\drinks\DrinkJuiceDialogue.png", (0, 255, 0), "Juice drink order", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["juiceDrinkOrderDetectionThreshold"])
 
 
 oneItemOrder = Item(r"project\img\dialogueItems\numberAmount\amountOne.png", (0, 0, 255), "One item amount", ItemTypes.DIALOGUE_ITEM, detectionThreshold=settings["oneItemOrderDetectionThreshold"])
@@ -128,6 +134,7 @@ menuItems = [
     menuFinishButton,
         
     burgerBunTopItem,
+    burgerOnionItem,
     burgerCheeseItem,
     burgerPattyVeganItem,
     burgerPattyMeatItem,
@@ -137,8 +144,10 @@ menuItems = [
     
     normalFriesItem,
     mozzarellaSicksItem,
+    onionRingsItem,
     
     normalDrinkItem,
+    juiceDrinkItem,
 ]
 
 dialogueItems = [
@@ -146,6 +155,7 @@ dialogueItems = [
     mediumSizeDialogue,
     largeSizeDialogue,
 
+    onionDialogue,
     cheeseDialogue, 
     pattyMeatDialogue,
     pattyVeganDialogue,
@@ -154,8 +164,10 @@ dialogueItems = [
     
     normalFryOrder,
     mozzarellaSticksOrder,
+    onionRingsOrder,
     
     normalDrinkOrder,
+    juiceDrinkOrder
 ]
 
 itemAmounts = [
@@ -281,7 +293,7 @@ def ProcessOrder():
         match currentOrderState:
             case OrderState.BURGER:
                 # Add a extra check here so that it checks if the NPC has ordered a patty. This is to wait until the order loads.
-                if any(item in detectedOrderedItems for item in [pattyMeatDialogue, pattyVeganDialogue, tomatoeDialogue, lettuceDialogue, cheeseDialogue]):
+                if any(item in detectedOrderedItems for item in [pattyMeatDialogue, pattyVeganDialogue, tomatoeDialogue, lettuceDialogue, cheeseDialogue, onionDialogue]):
                     ClickOnItem(burgerBunBottomItem)
                     
                     if (pattyMeatDialogue in detectedOrderedItems):
@@ -298,6 +310,8 @@ def ProcessOrder():
                     if (tomatoeDialogue in detectedOrderedItems):
                         ClickOnItem(burgerTomatoeItem)
                     
+                    if (onionDialogue in detectedOrderedItems):
+                        ClickOnItem(burgerOnionItem)
                     
                     ClickOnItem(burgerBunTopItem)
                     
@@ -305,28 +319,30 @@ def ProcessOrder():
                     currentOrderState = OrderState.FRIES
             case OrderState.FRIES:
                 # Check if the fries order is in the detectedOrderedItems list, since theres still orders that we havent unlocked yet
-                if any(item in detectedOrderedItems for item in [mozzarellaSticksOrder, normalFryOrder]):
+                if any(item in detectedOrderedItems for item in [mozzarellaSticksOrder, normalFryOrder, onionRingsOrder]):
                     if (normalFryOrder in detectedOrderedItems):
                         ClickOnItem(normalFriesItem)
                     if (mozzarellaSticksOrder in detectedOrderedItems):
-                        print("Ms detected")
                         ClickOnItem(mozzarellaSicksItem)
+                    if (onionRingsOrder in detectedOrderedItems):
+                        ClickOnItem(onionRingsItem)
 
                     ClickOnItemSize()
                     
                     ClickOnItem(drinkMenuButton)
                     currentOrderState = OrderState.DRINK
             case OrderState.DRINK:
-                if (normalDrinkOrder in detectedOrderedItems):
+                if any(item in detectedOrderedItems for item in [normalDrinkOrder, juiceDrinkOrder]):
                     if (normalDrinkOrder in detectedOrderedItems):
                         ClickOnItem(normalDrinkItem)
+                    if (juiceDrinkOrder in detectedOrderedItems):
+                        ClickOnItem(juiceDrinkItem)
 
                     ClickOnItemSize()
                     
                 ClickOnItem(menuFinishButton)
                 currentOrderState = OrderState.FINISH
             case OrderState.FINISH:
-                time.sleep(1)
                 currentOrderState = OrderState.BURGER
                 detectedOrderedItems.clear()
                 return
@@ -353,6 +369,11 @@ def ShowWindow(image, windowName : str, screenWidth : int):
     cv.setWindowProperty(windowName, cv.WND_PROP_TOPMOST, 1)  # Set the window property to always on top
 
 def Main():
+    detectedOrderedItems.clear()
+    detectedMenuItems.clear()
+    detectedItems.clear()
+    detectedItemAmount.clear()
+    
     TakeScreenshot()
 
     try:
@@ -363,17 +384,15 @@ def Main():
             
             cv.waitKey(1)
         
-            TakeScreenshot()
-            
             DetectElementInRegion(dialogueRgb, dialogueGray, dialogueItems)
             DetectElementInRegion(menuRgb, menuGray, menuItems)
 
-            if (settings["aiViewEnabled"]):
-                ShowWindow(dialogueRgb, dialogueWindowName, 400)
-                ShowWindow(menuRgb, menuWindowName, 400)
+            #if (settings["aiViewEnabled"]):
+            ShowWindow(dialogueRgb, dialogueWindowName, 400)
+            ShowWindow(menuRgb, menuWindowName, 400)
 
             ProcessOrder()
-            time.sleep(screenShotRate)
+            time.sleep(screenshotRate)
 
         cv.destroyAllWindows()
         print("WINDOW DESTROYED")

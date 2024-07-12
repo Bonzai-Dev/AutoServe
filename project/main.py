@@ -188,7 +188,7 @@ def ClickOnItem(item : Item):
         autoit.mouse_click("left", positionX, positionY, 1, 2)
         time.sleep(0.25)
 
-def ClickOnItemSize():
+def ClickOnItemSize(): 
     # Removing all of the items from list once detected so that we can readd them again to prevent duplicates
     if (smallSizeDialogue in detectedOrderedItems):
         ClickOnItem(smallSizeMenu)

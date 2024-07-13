@@ -19,5 +19,6 @@
 
 ## NOTE:
 - For those who believe this is cheating or hacking, it is not. The program is not modifying in-game values. Additionally, you will still need to manually refill your stats when they decrease and will make the same amount of money as if a human did the work.
-- This bot is also for educational purposes only. Its sole purpose is to teach how programs are used to automate tasks in games and spread awareness of  auto-farming.
+- This bot is also for educational purposes only. Its sole purpose is to teach how programs are used to automate tasks in games and spread awareness of  auto-farming. 
 - I am also NOT liable for any damages caused by the use of the bot, such as account termination or data loss.
+- If you have any questions involving on how the bot works, then feel free to create a new question in the issues. 

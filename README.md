@@ -9,9 +9,9 @@
 - Modify the settings if needed. You can also retake the screenshots if the bot isint detecting all the items.
 - Load into the game and start your shift.
 
-- Run the program and wait for it to load.
+- Go to any cash register.
 
-- Once it has finished loading, close or tab out of the control panel. MAKE SURE TO TIME IT RIGHT. THE SCREENSHOTRATE COUNTDOWN HAS TO START WHEN YOU INTERACT WITH THE CASH REGISTER.
+- Run the program after the animations on the UI has stoppoed.
 
 - Let the bot run!
 

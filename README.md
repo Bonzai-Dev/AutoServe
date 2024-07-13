@@ -3,6 +3,7 @@
 
 ## How does it work?
 - AutoServe uses an open-source Python library called OpenCV for image detection. It detects items on the screen and NPC orders to automate the tasks and determine where to click.
+- [YouTube video explaning briefly on how it works](https://www.youtube.com/shorts/pfgZ4UlUKPA)
 
 ## How do I use it?
 - Obtain the executable from the lates version of the program or build from source.
